@@ -16,3 +16,5 @@ RoxygenNote: 7.2.3
 Imports:
     asreml (>= 4.1.0),
     magrittr
+URL: https://github.com/michaelhm-daf/ecreml
+BugReports: https://github.com/michaelhm-daf/ecreml/issues
