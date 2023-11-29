@@ -1,12 +1,18 @@
 Package: ecreml
-Title: What the Package Does (One Line, Title Case)
+Title: Incorporates ECs into the analysis of agriculturial trial data containing GxExM interactions
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person("Michael", "Mumford", , "Michael.Mumford@daf.qld.gov.au", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-5037-8680"))
+Description: This R-package complements the statistcal methodology outlined in Mumford et al. (2023) 
+	that enables environmental covariates (ECs) to be incorporated into the multi-environment trial (MET) analysis
+	of agricultural consisting of Genotype x Environment x Management (GxExM) interaction effects. Specifically, 
+	this R-package contains a suite of functions that automate the process of identifying key ECs contributing to the
+	GxExM interaction after a baseline model is fitted using the asreml R-package tat does not contain any EC information.
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
+Imports:
+    asreml (>= 4.1.0),
+    magrittr
