@@ -9,7 +9,7 @@
 #' 
 #' @export
 expr_to_terms <- function(expr) {
-  expr_char <- expr_text(expr)
+  expr_char <- rlang::expr_text(expr)
   
   if(grepl(" + ",  expr_char)) {
     # If the expression string contains "+" operators, split terms by the "+"
@@ -62,17 +62,17 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
   # Convert the expressions to character vectors
   
   # convert expression to a character vector of length 1
-  main_terms <- expr_text(main_expr) %>%
+  main_terms <- rlang::expr_text(main_expr) %>%
     stringr::str_replace_all("\n", "")# %>%  #remove any new line symbols
   #str_replace_all(" ", "") %>% #remove all spaces to stop any unexpected bugs from occurring
   # str_replace("~", "")         # Replace only the first tilde in the model
   # If the response variable is included then do not remove the tile
   if(response==TRUE){
-    main_terms <- str_split_1(main_terms, pattern= '\\+')
-    main_terms <- c(str_split_1(main_terms[1], pattern="\\~"), main_terms[-1])
+    main_terms <- stringr::str_split_1(main_terms, pattern= '\\+')
+    main_terms <- c(stringr::str_split_1(main_terms[1], pattern="\\~"), main_terms[-1])
   } else{
-    main_terms <- main_terms %>% str_replace("~","")
-    main_terms <- str_split_1(main_terms, pattern= '\\+')
+    main_terms <- main_terms %>% stringr::str_replace("~","")
+    main_terms <- stringr::str_split_1(main_terms, pattern= '\\+')
   }
   
   # Create temporary version of main_terms without spaces
@@ -99,10 +99,10 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
     # Combine the first 2 terms with a tilde
     unique_terms <- c(paste0(unique_terms[1], "~", unique_terms[2]), unique_terms[c(-1, -2)] )
     unique_terms_str <- paste(unique_terms, collapse=" + ")
-    result_expr <- parse_expr(unique_terms_str)
+    result_expr <- rlang::parse_expr(unique_terms_str)
   } else {
     unique_terms_str <- paste(unique_terms, collapse=" + ")
-    result_expr <- parse_expr(paste0("~", unique_terms_str))
+    result_expr <- rlang::parse_expr(paste0("~", unique_terms_str))
   }
   
   return(result_expr)
@@ -384,8 +384,8 @@ ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=6){
                                    spl(!!.M, k=!!.kn):spl(!!.ec, k=!!.kn):!!.G)
   
   # Combine all fixed terms into a single expression respectively
-  fixed_terms <- parse_expr(paste0( expr_text(fixed_bl_terms), "+", expr_text( fixed_ec_terms)))
-  random_terms <- parse_expr(paste0( expr_text(random_bl_terms), "+", expr_text( random_ec_terms)))
+  fixed_terms <- rlang::parse_expr(paste0( rlang::expr_text(fixed_bl_terms), "+", rlang::expr_text( fixed_ec_terms)))
+  random_terms <- rlang::parse_expr(paste0( rlang::expr_text(random_bl_terms), "+", rlang::expr_text( random_ec_terms)))
   
   asr_call <- rlang::expr(asreml::asreml(fixed = !!response_term ~ !!fixed_terms,
                                          random = !!random_terms, # removed tilde as the tilde should already be in the call

@@ -471,11 +471,11 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
       # First define the model with every EC term for the candidate EC
       candid_fm <- ec_full_model_constructor(.fm=curr_fm, .ec=ec_candidate, .G=G, .M=M, .kn=6)
 
-      ec_candidate <- parse_quos(ec_candid, global_env())
+      ec_candidate <- rlang::parse_quos(ec_candid, rlang::global_env())
       # Remove non-significant fixed and random effects for the ECs in the candidate model
-      candid_fm <- simplify_ec_model(.fm=candid_fm, .ecs_in_model = ec_candidate, .G=expr_text(G), .M=expr_text(M))
+      candid_fm <- simplify_ec_model(.fm=candid_fm, .ecs_in_model = ec_candidate, .G=rlang::expr_text(G), .M=rlang::expr_text(M))
 
-      ec_candidate_bl <- parse_quos(c(ec_bl_terms_char, ec_candid), global_env())
+      ec_candidate_bl <- rlang::parse_quos(c(ec_bl_terms_char, ec_candid), rlang::global_env())
       # Calculate the RMSE of the simplified model
       rmse_candid <- rmse_calc(.fm= candid_fm, .G=G, .E=E, .M=M, .trial=trial, .env_cv_df = env_cv_df,
                                .cores=ncores, .kn=kn, .ecs_in_bline_model=ec_candidate_bl)$Rmse
@@ -554,7 +554,7 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
   # Identify the EC variables
   vars <- as.list(magrittr::set_names(seq_along(.df), names(.df)))
   # Identify which columns in the data frame consist to the ECs to be assessed
-  cols_ecs <- unlist(purrr::map(quo_ecs, rlang::eval_tidy, vars))
+  cols_ecs <- cols_ecs <- unlist(purrr::map(ECs, rlang::eval_tidy, vars))
   # Use the columns to obtain a vector of EC terms
   ec_terms_char <- colnames(.df[cols_ecs])
   # Define a quosure for the ecs to select from
@@ -563,6 +563,8 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
 
   if(rlang::is_missing(ecs_in_bline_model)==TRUE){
     ecs_in_bline_model <- rlang::quos(NULL)
+    cols_bl_ecs <- c()
+    ec_bl_terms_char <- c()
   } else {
     # # Identify which columns in the data frame consist of ECs in the baseline model
     # cols_ecs_bl <- unlist(purrr::map(quo_ecs_bl, rlang::eval_tidy, vars))
@@ -598,7 +600,7 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
       col_candid_ec <- unlist(vars[ec_iter$selected_ec])
       # Update ECs in current (baseline?!) model
       cols_bl_ecs <- c(cols_bl_ecs, col_candid_ec)
-      ecs_in_curr_bl_model <- parse_quos(names(vars[cols_bl_ecs]), env=global_env())
+      ecs_in_curr_bl_model <- rlang::parse_quos(names(vars[cols_bl_ecs]), env=rlang::global_env())
       # Remove selected EC from list of candidate ECs to choose from in the next iteration
       cols_ecs <- cols_ecs[cols_ecs!=col_candid_ec]
       # If statement to finish the model if there are no more ECs to choose from
@@ -606,7 +608,7 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
         break
       }
       # Update the quosure of ECs to select from for the next iteration
-      ecs_to_select_from <- parse_quos(names(vars[cols_ecs]), env=global_env())
+      ecs_to_select_from <- rlang::parse_quos(names(vars[cols_ecs]), env=rlang::global_env())
     } else {
       continue_ec_search <- FALSE
     }
@@ -618,6 +620,9 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
   final_list <- list(fm=final_fm, rmse=final_rmse)
   return(final_list)
 }
+
+
+
 
 
 
