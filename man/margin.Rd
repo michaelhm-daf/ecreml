@@ -4,7 +4,7 @@
 \alias{margin}
 \title{Determine the margin (i.e. order of hierarchy)}
 \usage{
-margin(terms, ec, G, M)
+margin(terms, ec, G, M, df)
 }
 \arguments{
 \item{terms}{A character vector of terms in the asreml model}
@@ -14,6 +14,8 @@ margin(terms, ec, G, M)
 \item{G}{A character indicating which term in the model is the genotype component}
 
 \item{M}{A character indicating which term in the model is the management practice component}
+
+\item{df}{A data frame containing the data used in the multi-environment trial analysis}
 }
 \value{
 A vector of type double indicating the hierarchical structure of the random terms in the model for a particular environmental covariate

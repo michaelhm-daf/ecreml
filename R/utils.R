@@ -6,11 +6,11 @@
 #' @return A character vector
 #'
 #' @examples
-#' 
+#'
 #' @export
 expr_to_terms <- function(expr) {
   expr_char <- rlang::expr_text(expr)
-  
+
   if(grepl(" + ",  expr_char)) {
     # If the expression string contains "+" operators, split terms by the "+"
     strsplit( expr_char, " \\+ ", fixed = TRUE)[[1]]
@@ -45,7 +45,7 @@ expr_to_terms <- function(expr) {
 #   return(result_expr)
 # }
 
-#' @title Subtract one expression from a character vector 
+#' @title Subtract one expression from a character vector
 #' @description
 #' A function that enables the subtraction of one character from a character vector. Used to ensure that the correct asreml model is called.
 #' @param main_expr An expression
@@ -55,12 +55,12 @@ expr_to_terms <- function(expr) {
 #' @return An expression to be included in an asreml call.
 #'
 #' @examples
-#' 
+#'
 #' @export
 # Write a function to subtract one expression from another larger expression
 subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
   # Convert the expressions to character vectors
-  
+
   # convert expression to a character vector of length 1
   main_terms <- rlang::expr_text(main_expr) %>%
     stringr::str_replace_all("\n", "")# %>%  #remove any new line symbols
@@ -74,27 +74,27 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
     main_terms <- main_terms %>% stringr::str_replace("~","")
     main_terms <- stringr::str_split_1(main_terms, pattern= '\\+')
   }
-  
+
   # Create temporary version of main_terms without spaces
   main_temp <- main_terms %>% stringr::str_replace_all(" ","")
-  
+
   removed_terms <- removed_char_vec %>%
     stringr::str_replace_all(" ", "") #%>%   #remove all spaces to stop any unexpected bugs from occurring
   #paste0("+", .) # include plus sign in the character vectors
-  
-  
+
+
   # Remove backticks from the term names
   # main_terms <- gsub("`", "", main_terms)
   # remove_terms <- gsub("`", "", remove_terms)
-  
+
   # Use which to preserve terms that require a space
   which_removed_terms <- which(main_temp%in%removed_terms)
   # set unique terms equal to main term
   unique_terms <-  main_terms[-which_removed_terms]
-  
-  
+
+
   # Recombine the unique terms into an expression
-  
+
   if(response==TRUE){
     # Combine the first 2 terms with a tilde
     unique_terms <- c(paste0(unique_terms[1], "~", unique_terms[2]), unique_terms[c(-1, -2)] )
@@ -104,7 +104,7 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
     unique_terms_str <- paste(unique_terms, collapse=" + ")
     result_expr <- rlang::parse_expr(paste0("~", unique_terms_str))
   }
-  
+
   return(result_expr)
 }
 
@@ -114,7 +114,7 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
 
 # # Write a function to determine the margin (i.e. order of hierarchy)
 # temp_ec_terms_df
-# 
+#
 # terms <- str_replace_all(temp_ec_terms_df$Term, "PostPAW","x")
 # terms <- str_replace_all(terms, "density","M")
 # terms <- str_replace_all(terms, "Hybrid","G")
@@ -158,47 +158,69 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
 # A function to determine which terms are nested within other terms
 # Note that this function assumes that the similar lower-order terms come first and vice-versa
 
-#' @title Determine the margin (i.e. order of hierarchy) 
+#' @title Determine the margin (i.e. order of hierarchy)
 #' @description
-#' This function calculates the equivalent of the margin terms (used in the wald tests for fixed effects) for the random terms in the model, 
+#' This function calculates the equivalent of the margin terms (used in the wald tests for fixed effects) for the random terms in the model,
 #' enabling ec_random_model to correctly determine which terms to test and when to finishing testing for significant interaction terms.
 #' @param terms A character vector of terms in the asreml model
 #' @param ec A character indicating which term in the model is the environmental covariate being tested
 #' @param G A character indicating which term in the model is the genotype component
 #' @param M A character indicating which term in the model is the management practice component
+#' @param df A data frame containing the data used in the multi-environment trial analysis
 #'
 #' @return A vector of type double indicating the hierarchical structure of the random terms in the model for a particular environmental covariate
 #'
 #' @examples
-#' 
+#'
 #' @export
-margin <- function(terms, ec, G, M){
+margin <- function(terms, ec, G, M, df){
   if (is.na(ec) || ec == "") {
-    stop("The 'ec' parameter is NA or an empty string.")
+    stop("The 'ec' parameter is NA or an empty character.")
   }
-  
-  # # Create a matrix determining the marginality
-  terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G","spl(M, k = 6):x","spl(M, k = 6):x:G","spl(M, k = 6):spl(x, k = 6)","spl(M, k = 6):spl(x, k = 6):G")
-  
-  terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
-  rownames(terms_matrix) <- terms_possible
-  colnames(terms_matrix) <- terms_possible
-  
-  # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
-  # Note THAT THIS MATRIX IS NON-SYMMETRIC
-  rownames(terms_matrix)[5]
-  terms_matrix[1,] <- c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE)
-  terms_matrix[2,] <- c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE)
-  terms_matrix[3,] <- c(FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE)
-  terms_matrix[4,] <- c(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, TRUE)
-  terms_matrix[5,] <- c(FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE)
-  terms_matrix[6,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE)
-  terms_matrix[7,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE)
-  terms_matrix[8,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE)
-  
-  #putting together index of letters and symbols
-  letter_array <- c(toupper(letters))
-  
+
+  # Define marginality matrix based upon whether M is categorical or continuous
+  if(is.factor(df[[.M]])==TRUE ){
+    # # Create a matrix determining the marginality
+    terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G")
+
+    terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
+    rownames(terms_matrix) <- terms_possible
+    colnames(terms_matrix) <- terms_possible
+
+    # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
+    # Note THAT THIS MATRIX IS NON-SYMMETRIC
+    #rownames(terms_matrix)[5]
+    terms_matrix[1,] <- c(TRUE, TRUE, TRUE, TRUE)
+    terms_matrix[2,] <- c(FALSE, TRUE, FALSE, TRUE)
+    terms_matrix[3,] <- c(FALSE, FALSE, TRUE, TRUE)
+    terms_matrix[4,] <- c(FALSE, FALSE, FALSE, TRUE)
+
+    #putting together index of letters and symbols
+    letter_array <- c(toupper(letters))
+  } else {
+    # # Create a matrix determining the marginality
+    terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G","spl(M, k = 6):x","spl(M, k = 6):x:G","spl(M, k = 6):spl(x, k = 6)","spl(M, k = 6):spl(x, k = 6):G")
+
+    terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
+    rownames(terms_matrix) <- terms_possible
+    colnames(terms_matrix) <- terms_possible
+
+    # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
+    # Note THAT THIS MATRIX IS NON-SYMMETRIC
+    #rownames(terms_matrix)[5]
+    terms_matrix[1,] <- c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE)
+    terms_matrix[2,] <- c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE)
+    terms_matrix[3,] <- c(FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE)
+    terms_matrix[4,] <- c(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, TRUE)
+    terms_matrix[5,] <- c(FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE)
+    terms_matrix[6,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE)
+    terms_matrix[7,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE)
+    terms_matrix[8,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE)
+
+    #putting together index of letters and symbols
+    letter_array <- c(toupper(letters))
+  }
+
   # Replace ec, G, and M with their corresponding names
   terms <- stringr::str_replace_all(terms, ec,"x")
   terms <- stringr::str_replace_all(terms, M,"M")
@@ -239,7 +261,7 @@ margin <- function(terms, ec, G, M){
 
 #' @title Determine if corresponding spline term is present for each linear term
 #' @description
-#' A function to determine if the corresponding spline term for a fixed effects EC term is currently in the model. 
+#' A function to determine if the corresponding spline term for a fixed effects EC term is currently in the model.
 #' If the spline term is still in the model, then the linear term (fit as a fixed effect) cannot be dropped from the model, and hence will not be tested in \code{ec_fixed_model}.
 #' @param .fm An \code{asreml} model object
 #' @param wald_df A data frame containing the information pertaining to the wald test (see \code{asreml::wald.asreml})
@@ -249,7 +271,7 @@ margin <- function(terms, ec, G, M){
 #'
 #' @return An updated Wald table with an additional column of type logical indicating whether each fixed effect term in the model can be dropped.
 #' @examples
-#' 
+#'
 #' @export
 dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M, randomTerms){
   randomTerms <- attr(.fm$formulae$random, "term.labels") %>%
@@ -262,22 +284,22 @@ dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M, randomTerms){
   # Add spl_equiv_ec_terms to wald_df
   new_wald_df <- wald_df
   new_wald_df$spl_equiv_ec <- stringr::str_replace_all(rownames(wald_df), spl_ec_terms_char)
-  
+
   # Subset vector to include only elements with replacements (i.e., those containing 'spl(')
   new_wald_df$spl_equiv_M <- stringr::str_replace_all(rownames(wald_df), .M, paste0("spl(", .M, ")"))
-  
-  
+
+
   # Subset vector to include only elements with replacements (i.e., those containing 'spl(')
   #spline_equiv_ec_terms <-
   #spline_equiv_density_terms <-  str_replace_all(rownames(wald_df), .M, paste0("spl(", .M, ")"))
-  
+
   # For each EC, check if the equivalent spline term is in the current model w.r.t spl(EC) & spl(M)
   new_wald_df$pres_spl_ec <- new_wald_df$spl_equiv_ec%in%randomTerms
   new_wald_df$pres_M_ec <- new_wald_df$spl_equiv_M%in%randomTerms
-  
+
   # Define a logical variable indicating if each term can be dropped
   new_wald_df$canDrop <- !(new_wald_df$pres_spl_ec | new_wald_df$pres_M_ec)
-  
+
   return(new_wald_df)
 }
 
@@ -288,20 +310,20 @@ dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M, randomTerms){
 #' This is necessary for regression modelling to ensure that the Wald tests are correct for lower order terms in the model.
 #' @param .fm An \code{asreml} model object
 #' @param term A character scalar indicating which term in the model is currently being tested
-#' @param ssType The type of sums of squares used for testing. Default is "\code{conditional}" which is analogous to Type 3 sums of squares. 
+#' @param ssType The type of sums of squares used for testing. Default is "\code{conditional}" which is analogous to Type 3 sums of squares.
 #' Use "\code{incremental}" for Type 1 sums of squares. See  \code{asreml::wald.asreml} for more information.
 #'
 #' @return An asreml model object with a new fixed effets model.
 #' @examples
-#' 
+#'
 #' @export
 update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), ssType="conditional"){
-  
+
   .df <<- base::eval(.fm$call$data)
   # Define an expression for the fixed and random effect EC terms to be added in the updated model
-  
+
   curr_fm <- .fm
-  
+
   fixed_terms_curr <- curr_fm$call$fixed
   random_terms_curr <- curr_fm$call$random
   residual_terms_curr <- curr_fm$call$residual
@@ -313,15 +335,15 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), ssType="condition
                                           aom=T, maxit=30,
                                           wald=list(denDF="numeric",
                                                     ssType= !!ssType)))
-  
-  
+
+
   #curr_fm <- eval(curr_call)
   if(rlang::is_missing(term)==FALSE){
     print('Simplifying the FIXED effects model')
     fixed_terms_curr <- subtract_terms(main_expr = fixed_terms_curr,
                                        removed_char_vec = term,
                                        response=TRUE)
-    
+
     curr_call <- rlang::expr(asreml::asreml(fixed= !!fixed_terms_curr  ,
                                             random =  !!random_terms_curr,
                                             residual = !!residual_terms_curr,
@@ -330,7 +352,7 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), ssType="condition
                                             aom=T, maxit=30,
                                             wald=list(denDF="numeric",
                                                       ssType="conditional")))
-    
+
   }
   curr_fm <- eval(curr_call)
   return(curr_fm)
@@ -343,7 +365,7 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), ssType="condition
 #' @title Creates an updated model which is the same as the current model but adds one new EC into the model
 #' @description
 #' Runs an updated asreml model with the additional fixed and random effects term for the environmental covariate added to the model.
-#' 
+#'
 #' @param .fm An \code{asreml} model object without the environmental covariate in the model.
 #' @param .ec An expression with the environmental covariate to be included in the model.
 #' @param .G A character indicating which term in the model is the genotype component.
@@ -352,48 +374,54 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), ssType="condition
 #'
 #' @return An asreml model object with all of the fixed and random terms related to the environmental covariate \code{.ec} being added to the model.
 #' @examples
-#' 
+#'
 #' @export
 ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=6){
-  
+
   # Identify the data frame from the model
   .df <<- base::eval(.fm$call$data)
-  
+
   # Allow these terms to be included in the model unquoted
   # .ec <- enexpr(.ec)
   # .G <- enexpr(.G)
   # .M <- enexpr(.M)
-  
+
   # Identify the fixed, random and resiudal terms currently in the model
   response_term <- attr(.fm$formulae$fixed, "variables")[[2]] %>%
     as.character() %>%
     rlang::parse_expr()
   fixed_bl_terms <- attr(.fm$formulae$fixed, "term.labels") %>% paste(collapse="+") %>%
     rlang::parse_expr()
-  
+
   #fixed_terms <- .fm$call$fixed
   random_bl_terms <- .fm$call$random
   residual_terms <- .fm$call$residual
-  
+
   fixed_ec_terms <-  rlang::expr(!!.ec + !!.M:!!.ec + !!.ec:!!.G + !!.M:!!.ec:!!.G)
-  # INCLUDE IF STATE S.T RANDOM_EC_TERMS ONLY DEFINE IF EC IS A FACTOR
-  random_ec_terms <- rlang::expr(spl(!!.ec, k=!!.kn) + !!.M:spl(!!.ec, k=!!.kn) + spl(!!.ec, k=!!.kn):!!.G +
-                                   !!.M:spl(!!.ec, k=!!.kn):!!.G +
-                                   spl(!!.M, k=!!.kn):!!.ec + spl(!!.M, k=!!.kn):!!.ec:!!.G +
-                                   spl(!!.M, k=!!.kn):spl(!!.ec, k=!!.kn) +
-                                   spl(!!.M, k=!!.kn):spl(!!.ec, k=!!.kn):!!.G)
-  
+  # Change the random terms based on whether M is categorical or continuous
+  if(is.factor(.df[[.M]])==TRUE){
+    random_ec_terms <- rlang::expr(spl(!!.ec, k=!!.kn) + !!.M:spl(!!.ec, k=!!.kn) + spl(!!.ec, k=!!.kn):!!.G +
+                                     !!.M:spl(!!.ec, k=!!.kn):!!.G)
+  } else{
+    random_ec_terms <- rlang::expr(spl(!!.ec, k=!!.kn) + !!.M:spl(!!.ec, k=!!.kn) + spl(!!.ec, k=!!.kn):!!.G +
+                                     !!.M:spl(!!.ec, k=!!.kn):!!.G +
+                                     spl(!!.M, k=!!.kn):!!.ec + spl(!!.M, k=!!.kn):!!.ec:!!.G +
+                                     spl(!!.M, k=!!.kn):spl(!!.ec, k=!!.kn) +
+                                     spl(!!.M, k=!!.kn):spl(!!.ec, k=!!.kn):!!.G)
+  }
+
+
   # Combine all fixed terms into a single expression respectively
   fixed_terms <- rlang::parse_expr(paste0( rlang::expr_text(fixed_bl_terms), "+", rlang::expr_text( fixed_ec_terms)))
   random_terms <- rlang::parse_expr(paste0( rlang::expr_text(random_bl_terms), "+", rlang::expr_text( random_ec_terms)))
-  
+
   asr_call <- rlang::expr(asreml::asreml(fixed = !!response_term ~ !!fixed_terms,
                                          random = !!random_terms, # removed tilde as the tilde should already be in the call
                                          residual= !!residual_terms, # removed tilde as the tilde should already be in the call
                                          data=.df,
                                          na.action=asreml::na.method(x='include'),
                                          aom=T, maxit=300))
-  
+
   ec_full_fm <- eval(asr_call)
   return(ec_full_fm)
 }

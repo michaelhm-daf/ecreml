@@ -464,7 +464,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
     which_selected <- which(ec_summary$RMSE==min(ec_summary$RMSE, na.rm=TRUE))
     ec_candid <- ec_summary$EC[which_selected]
     rmse_candid <- ec_summary$RMSE[which_selected]
-    # If model has improved (i.e. RMSE is lower) than include best EC as a candidate model, then find a parsimousous version of the model
+    # If model has improved (i.e. RMSE is lower) than include best EC as a candidate model, then find a parsimonious version of the model
     if(rmse_candid < rmse_curr){
 
       ec_candidate <- rlang::parse_expr(ec_candid)
@@ -485,7 +485,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
         curr_fm <- candid_fm
         rmse_curr <- rmse_candid
         continue <- FALSE
-      } else { # If the candidate EC model is not an improvement, removed that particular EC from the data frame containing the list of candidate ECs
+      } else { # If the candidate EC model is not an improvement, remove that particular EC from the data frame containing the list of candidate ECs
         ec_summary <- ec_summary[-which_selected, ]
         # If there are no more candidate EC models to choose from, finish the while loop and return the initial model as the best model
         if(dim(ec_summary)[1]<=0){

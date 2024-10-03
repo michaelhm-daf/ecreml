@@ -487,7 +487,7 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' 
 #' @export
 ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
-                      cores=2, kn=6, trial=NULL, ecs_in_bline_model=NULL)
+                      cores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::quos(NULL))
 {
   df  <- base::eval(fm$call$data)
   

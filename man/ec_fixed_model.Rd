@@ -11,9 +11,9 @@ ec_fixed_model(.fm, .ecs_in_model, .G, .M)
 
 \item{.ecs_in_model}{A list of expressions such that each expression is an environmental covariate that is present in the current model.}
 
-\item{.G}{The genotype term in the model as an expression}
+\item{.G}{The genotype term in the model as a character}
 
-\item{.M}{The management practice term in the model as an expression}
+\item{.M}{The management practice term in the model a character}
 }
 \value{
 An updated asreml model such that the non-significant environmental covariate fixed effect terms have been removed from the model.
