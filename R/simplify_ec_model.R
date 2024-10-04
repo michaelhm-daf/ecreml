@@ -298,37 +298,9 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
   which_fixed_ec_terms <- grep(ec_terms_for_grep, attr(.fm$formulae$fixed, "term.labels") )
   fixed_ec_terms <-  attr(.fm$formulae$fixed, "term.labels")[which_fixed_ec_terms]
 
-  # Place the EC terms into a data frame
-  #ec_terms_df <- data.frame(Term=fixed_ec_terms)
-  #str(ec_terms_df)
-
-  # Determine the margin (i.e. order of hierachy) by how many times the strings ":" and "spl" appear in the term
-  #ec_terms_df$Margin <-  str_count(ec_terms_df$Term, ":") + str_count(ec_terms_df$Term, "spl")
-
-  #ec_terms_df$Margin <- factor(ec_terms_df$Margin)
-
-
-
-  # Define an expression for the fixed and random effect EC terms to be added in the updated model
-  # fixed_terms_curr <- .fm$call$fixed
-  # random_terms_curr <- .fm$call$random
-  # residual_terms_curr <- .fm$call$residual
-  #
-  # curr_call <- rlang::expr(asreml::asreml(fixed= !!fixed_terms_curr  ,
-  #                                         random =  !!random_terms_curr,
-  #                                         residual= !!residual_terms_curr,
-  #                                         data= .df,
-  #                                         na.action = na.method(x = "include"),
-  #                                         aom=T, maxit=30,
-  #                                         wald=list(denDF="numeric",
-  #                                                   ssType="conditional")))
-
   .fm <- update_fixed_asr(.fm=.fm)
 
-  #.df  <<- base::eval(.fm$call$data)
-
   # Denote current model
-  #wald_init_df <- asreml::wald.asreml(curr_fm, denDF='numeric', ssType='conditional')$Wald
   wald_init_df <- as.data.frame(.fm$aov)
   # If the last conditional F-value is NA, rerun and use incremental F-value instead
   h <- dim(wald_init_df)[1]
@@ -348,7 +320,7 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
   #wald_curr_df$Margin <- factor(wald_curr_df$Margin) %>% as.integer()
 
   # Identify if the corresponding spline term is in the model for each EC
-  wald_curr_df <- dropFixedTerm(.fm, wald_init_df, quo_ecs_in_model, .M, randomTerms=random_terms_curr)
+  wald_curr_df <- dropFixedTerm(.fm, wald_df = wald_init_df, quo_ecs_in_model, .M, randomTerms=random_terms_curr)
 
   # Do a for loop for each EC to drop terms from the model
   # Set j equal to the current max value of margin

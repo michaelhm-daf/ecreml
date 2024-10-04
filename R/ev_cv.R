@@ -75,7 +75,7 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   if(is.null(.env_cv_df[[.E]])==TRUE){
     if(is.null(.env_cv_df$.E)==TRUE){
       #stop("The environment term is missing from the provided environment grouping for cross validation")
-    } else{
+    } else {
       #If 'E' is specified in the cross-validation dataframe, make the environment column the same as the 'E' column
       .env_cv_df[[.E]] <- .env_cv_df$.E
     }
@@ -89,48 +89,88 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   # Make cv_group a factor (should already be a factor though!)
   .df$cv_group <- factor(.df$cv_group)
 
+
   # Define a table that will be used to generate model predictions later on
   # Identify the classify list and levels of each factor based on whether a trial term is included in the model
   if(rlang::quo_is_null(.ecs_in_bline_model[[1]])==TRUE){
-    expr_list <- rlang::exprs(!!.E, !!.G, !!.M)
-    # Create list of values we want to predict for
-    aux_parallel <- unique(.df[,purrr::map_chr(expr_list, rlang::as_string)]) %>%
-      purrr::modify_if(is.numeric, round, digits=4) # Round all continuous variables to 4 decimal places
-    # Remove rows where M is NA (need to check that the code still works when M is a factor!!)
-    aux_parallel <- aux_parallel[!is.na(aux_parallel[[.M]]),]
+    # Change the classify terms if M is missing from the baseline model
+    if(is.null(.M)==TRUE){
+      expr_list <- rlang::exprs(!!.E, !!.G)
+      # Create list of values we want to predict for
+      aux_parallel <- unique(.df[,purrr::map_chr(expr_list, rlang::as_string)]) %>%
+        purrr::modify_if(is.numeric, round, digits=4) # Round all continuous variables to 4 decimal places
 
-    # Define the terms corresponding to G, M and ec to appear in the classify statement
-    classify_terms <- rlang::expr(!!.G:!!.M)
-    # Use expr_text() to add quotations around the expression
-    classify_terms <- rlang::expr_text(classify_terms)
+      # Define the terms corresponding to G, M and ec to appear in the classify statement
+      classify_terms <- rlang::expr(!!.G)
+      # Use expr_text() to add quotations around the expression
+      classify_terms <- rlang::expr_text(classify_terms)
 
-    # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
-    levels_list <- list(aux_parallel[[.G]],
-                        aux_parallel[[.M]])
+      # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+      levels_list <- list(aux_parallel[[.G]])
 
-    # Now give the headings of the levels_list names
-    names(levels_list) <- c(rlang::expr_text(.G), rlang::expr_text(.M))
+      # Now give the headings of the levels_list names
+      names(levels_list) <- c(rlang::expr_text(.G))
+    } else {
+      expr_list <- rlang::exprs(!!.E, !!.G, !!.M)
+      # Create list of values we want to predict for
+      aux_parallel <- unique(.df[,purrr::map_chr(expr_list, rlang::as_string)]) %>%
+        purrr::modify_if(is.numeric, round, digits=4) # Round all continuous variables to 4 decimal places
+      # Remove rows where M is NA (need to check that the code still works when M is a factor!!)
+      aux_parallel <- aux_parallel[!is.na(aux_parallel[[.M]]),]
+
+      # Define the terms corresponding to G, M and ec to appear in the classify statement
+      classify_terms <- rlang::expr(!!.G:!!.M)
+      # Use expr_text() to add quotations around the expression
+      classify_terms <- rlang::expr_text(classify_terms)
+
+      # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+      levels_list <- list(aux_parallel[[.G]],
+                          aux_parallel[[.M]])
+
+      # Now give the headings of the levels_list names
+      names(levels_list) <- c(rlang::expr_text(.G), rlang::expr_text(.M))
+    }
   } else {
-    expr_list <- rlang::exprs(!!.E, !!.G, !!.M)
+    if(is.null(.M)==TRUE){
+      expr_list <- rlang::exprs(!!.E, !!.G)
 
-    # define a tibble version of .df so that the next line works correctly for 1 baseline EC
-    df_tib <- tibble::as_tibble(.df)
+      # define a tibble version of .df so that the next line works correctly for 1 baseline EC
+      df_tib <- tibble::as_tibble(.df)
 
-    # Create list of values we want to predict for
-    aux_parallel <- unique(df_tib[, c(purrr::map_chr(expr_list, rlang::as_string),colnames(df_tib[,baseline_ec_cols]))]) %>%
-      purrr::modify_if(is.numeric, round, digits=4) %>% # Round all continuous variables to 4 decimal places
-      as.data.frame()
-    # Remove rows where M is NA (need to check that the code still works when M is a factor!!)
-    aux_parallel <- aux_parallel[!is.na(aux_parallel[[.M]]),]
+      # Create list of values we want to predict for
+      aux_parallel <- unique(df_tib[, c(purrr::map_chr(expr_list, rlang::as_string),colnames(df_tib[,baseline_ec_cols]))]) %>%
+        purrr::modify_if(is.numeric, round, digits=4) %>% # Round all continuous variables to 4 decimal places
+        as.data.frame()
+
+      bl_ecs_colon <- rlang::parse_expr(paste(colnames(.df[baseline_ec_cols]), collapse=":"))
+      # Define the terms corresponding to G, M and ec to appear in the classify statement
+      classify_terms <- rlang::expr(!!.G:!!bl_ecs_colon)
+      # Use expr_text() to add quotations around the expression
+      classify_terms <-  gsub("\\(|\\)", "", rlang::expr_text(classify_terms)) # Remove all parentheses from the character string
+      # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+      levels_list <- purrr::map(aux_parallel[,-1], as.vector) # Remove the .E column which should always be column 1
+    } else {
+      expr_list <- rlang::exprs(!!.E, !!.G, !!.M)
+
+      # define a tibble version of .df so that the next line works correctly for 1 baseline EC
+      df_tib <- tibble::as_tibble(.df)
+
+      # Create list of values we want to predict for
+      aux_parallel <- unique(df_tib[, c(purrr::map_chr(expr_list, rlang::as_string),colnames(df_tib[,baseline_ec_cols]))]) %>%
+        purrr::modify_if(is.numeric, round, digits=4) %>% # Round all continuous variables to 4 decimal places
+        as.data.frame()
+      # Remove rows where M is NA (need to check that the code still works when M is a factor!!)
+      aux_parallel <- aux_parallel[!is.na(aux_parallel[[.M]]),]
 
 
-    bl_ecs_colon <- rlang::parse_expr(paste(colnames(.df[baseline_ec_cols]), collapse=":"))
-    # Define the terms corresponding to G, M and ec to appear in the classify statement
-    classify_terms <- rlang::expr(!!.G:!!.M:!!bl_ecs_colon)
-    # Use expr_text() to add quotations around the expression
-    classify_terms <-  gsub("\\(|\\)", "", rlang::expr_text(classify_terms)) # Remove all parentheses from the character string
-    # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
-    levels_list <- purrr::map(aux_parallel[,-1], as.vector) # Remove the .E column which should always be column 1
+      bl_ecs_colon <- rlang::parse_expr(paste(colnames(.df[baseline_ec_cols]), collapse=":"))
+      # Define the terms corresponding to G, M and ec to appear in the classify statement
+      classify_terms <- rlang::expr(!!.G:!!.M:!!bl_ecs_colon)
+      # Use expr_text() to add quotations around the expression
+      classify_terms <-  gsub("\\(|\\)", "", rlang::expr_text(classify_terms)) # Remove all parentheses from the character string
+      # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+      levels_list <- purrr::map(aux_parallel[,-1], as.vector) # Remove the .E column which should always be column 1
+    }
   }
   # Used the cross-validation data frame to determine the total number of folds
   v <- length(levels(.df$cv_group))
@@ -160,9 +200,11 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                                 # (vi) anything with 'spl' (i.e. any spline terms)
                                 which_continuous <- grep(":|at\\(|mv|\\(Intercept\\)|spl", .fm$factor.names)
                                 # Also remove the M term from list of factors if M is continuous
-                                if(is.double(subset_df[[.M]])==TRUE){
-                                  remove_cont_M <- grep(rlang::expr_text(.M), .fm$factor.names)
-                                  which_continuous <- unique(c(which_continuous,remove_cont_M))
+                                if(is.null(.M)==FALSE){
+                                  if(is.double(subset_df[[.M]])==TRUE){
+                                    remove_cont_M <- grep(rlang::expr_text(.M), .fm$factor.names)
+                                    which_continuous <- unique(c(which_continuous,remove_cont_M))
+                                  }
                                 }
                                 # Also remove ECs in the model that are continuous
                                 # Note: May need to add for loop if multiple ECs are included in the model
@@ -286,21 +328,13 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                                   rlang::parse_expr()
                                 # Obtain the response variable using the call from the baseline model
                                 #response_term <- attr(.fm$formulae$fixed, "variables")[[2]]
-
-                                # Define an expression for the fixed and random effect EC terms to be added in the updated model
-                                #fixed_ec_terms <- rlang::expr(!!.ec + !!.ec:!!.G + !!.ec:!!.M + !!.ec:!!.G:!!.M)
-                                # Change the model depending on whether M is a factor or a variate (i.e. continuous)
-                                if(is.double(.df[[.M]])==TRUE){
-                                  # Determine the correct str model for the subsetted data
-                                  eg <- length(levels(subset_df[[.G]]))*length(levels(subset_df[[.E]]))
+                                # Change the model depending on whether M is a factor or a variate (i.e. continuous) or missing
+                                if(is.null(.M)==TRUE){
                                   if(is.null(.trial)==FALSE){
-                                    # Calculate total number of random regression terms for the trial by genotype term
-                                    tg <- length(levels(subset_df[[.G]]))*length(levels(subset_df[[.trial]]))
-                                    # Define the random regression terms that are embedded within str()
-                                    random_str_terms <- rlang::expr(str( ~ !!.trial:!!.G + !!.trial:!!.G:!!.M, ~corh(2):id(!!tg) ) +
-                                                                      str(~ !!.E:!!.G + !!.E:!!.G:!!.M, ~corh(2):id(!!eg) ))
+                                    # Define the random regression terms
+                                    random_str_terms <- rlang::expr(!!.trial:!!.G + !!.E:!!.G)
                                   } else {
-                                    random_str_terms <- rlang::expr(str(~ !!.E:!!.G + !!.E:!!.G:!!.M, ~corh(2):id(!!eg) ))
+                                    random_str_terms <- rlang::expr(!!.E:!!.G)
                                   }
                                   subset_call <- rlang::expr(asreml::asreml(fixed = !!response_term ~ !!fixed_bl_terms,
                                                                             random =~ !!random_bl_terms + !!random_str_terms,
@@ -308,35 +342,66 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                                                                             data=subset_df,
                                                                             na.action=asreml::na.method(x='include'),
                                                                             aom=T, maxit=300))
+                                 } else if(is.double(.df[[.M]])==TRUE){
+                                    # Determine the correct str model for the subsetted data
+                                    eg <- length(levels(subset_df[[.G]]))*length(levels(subset_df[[.E]]))
+                                    if(is.null(.trial)==FALSE){
+                                      # Calculate total number of random regression terms for the trial by genotype term
+                                      tg <- length(levels(subset_df[[.G]]))*length(levels(subset_df[[.trial]]))
+                                      # Define the random regression terms that are embedded within str()
+                                      random_str_terms <- rlang::expr(str( ~ !!.trial:!!.G + !!.trial:!!.G:!!.M, ~corh(2):id(!!tg) ) +
+                                                                        str(~ !!.E:!!.G + !!.E:!!.G:!!.M, ~corh(2):id(!!eg) ))
+                                    } else {
+                                      random_str_terms <- rlang::expr(str(~ !!.E:!!.G + !!.E:!!.G:!!.M, ~corh(2):id(!!eg) ))
+                                    }
+                                    subset_call <- rlang::expr(asreml::asreml(fixed = !!response_term ~ !!fixed_bl_terms,
+                                                                              random =~ !!random_bl_terms + !!random_str_terms,
+                                                                              residual=~ !!residual_bl_terms,
+                                                                              data=subset_df,
+                                                                              na.action=asreml::na.method(x='include'),
+                                                                              aom=T, maxit=300))
 
-                                } else if(is.factor(.df[[.M]])==TRUE) {
-                                  subset_call <- rlang::expr(asreml(fixed= !!response_term ~ !!fixed_bl_terms,
-                                                                    random =~ !!random_bl_terms,
-                                                                    residual=~ !!residual_bl_terms,
-                                                                    data=subset_df,
-                                                                    aom=T, maxit=300))
-                                } else {
-                                  stop("Need to specify whether the management practice is a categorical or numerical variable")
-                                }
+                                 } else if(is.factor(.df[[.M]])==TRUE) {
+                                    if(is.null(.trial)==FALSE){
+                                      # Define the random regression terms
+                                      random_str_terms <- rlang::expr(!!.trial:!!.G + !!.trial:!!.G:!!.M + !!.E:!!.G + !!.E:!!.G:!!.M)
+                                    } else {
+                                      random_str_terms <- rlang::expr(!!.E:!!.G + !!.E:!!.G:!!.M)
+                                    }
+                                    subset_call <- rlang::expr(asreml::asreml(fixed= !!response_term ~ !!fixed_bl_terms,
+                                                                              random =~ !!random_bl_terms + !!random_str_terms,
+                                                                              residual=~ !!residual_bl_terms,
+                                                                              data=subset_df, aom=T, maxit=300))
 
-                                # Run the asreml model
-                                subset_fm <- eval(subset_call)
+                                  } else {
+                                    stop("M needs to be continuous of categorical")
+                                  }
+                          # Run the asreml model
+                          subset_fm <- eval(subset_call)
 
-                                # Obtain predictions for all environments (tested & untested) for subsetted model
-                                subset_pred <- asreml::predict.asreml(object=subset_fm,
-                                                                      classify= classify_terms,
-                                                                      levels=levels_list,
-                                                                      parallel=T, maxit=1, pworkspace="1gb")
-                                # Incorporate environment information into the table of predictions
-                                temp_subset.pred <- dplyr::left_join(subset_pred$pvals, aux_parallel,
-                                                                     by=colnames(aux_parallel)[-1]) # Assumes the 1st column is always .E
+                          # Obtain predictions for all environments (tested & untested) for subsetted model
+                          if(length(levels_list)>1){
+                            subset_pred <- asreml::predict.asreml(object=subset_fm,
+                                                                  classify= classify_terms,
+                                                                  levels=levels_list,
+                                                                  parallel=T, maxit=1, pworkspace="1gb")
+                          } else {
+                            subset_pred <- asreml::predict.asreml(object=subset_fm,
+                                                                  classify= classify_terms,
+                                                                  levels=levels_list,
+                                                                  parallel=F, maxit=1, pworkspace="1gb")
+                          }
 
-                                # Subset so that the data frame only contains predictions from untested environments
-                                temp_subset_pred <- temp_subset.pred[temp_subset.pred[[.E]]%in%setdiff(as.character(.env_cv_df[[.E]]),
-                                                                                                       as.character(unique(subset_df[[.E]]))), ]
+                          # Incorporate environment information into the table of predictions
+                          temp_subset.pred <- dplyr::left_join(subset_pred$pvals, aux_parallel,
+                                                                by=colnames(aux_parallel)[-1]) # Assumes the 1st column is always .E
 
-                                temp_subset_pred # Need this at the end of parallel loop to tell the loop what to perform the rbind over
-                              }
+                          # Subset so that the data frame only contains predictions from untested environments
+                          temp_subset_pred <- temp_subset.pred[temp_subset.pred[[.E]]%in%setdiff(as.character(.env_cv_df[[.E]]),
+                                                                                                  as.character(unique(subset_df[[.E]]))), ]
+
+                          temp_subset_pred # Need this at the end of parallel loop to tell the loop what to perform the rbind over
+                        }
 
   # Return the excess asreml licenses back to the RLM server
   parallel::stopCluster(cl)
@@ -344,11 +409,19 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 
   # Need to include trial in predict data frame to remove error message!!!
   # Note that instead I have removed the trial information
-  cv_df <- dplyr::select(.df, .G, .M, .E, response_term) %>%
-    dplyr::left_join(cv_pred, . ,
-                     by=c(rlang::expr_text(.G), rlang::expr_text(.M), rlang::expr_text(.E) )) %>%
-    tidyr::drop_na(.M)
-
+  if(is.null(.M)==TRUE){
+    # Note that this causes many-to-many warnings
+    cv_df <- dplyr::select(.df, .G, .E, response_term) %>%
+      dplyr::left_join(cv_pred, . ,
+                       by=c(rlang::expr_text(.G), rlang::expr_text(.E) )) %>%
+      unique()
+  } else {
+    cv_df <- dplyr::select(.df, .G, .M, .E, response_term) %>%
+      dplyr::left_join(cv_pred, . ,
+                       by=c(rlang::expr_text(.G), rlang::expr_text(.M), rlang::expr_text(.E))) %>%
+      tidyr::drop_na(.M) %>%
+      unique() # Make sure this doesn't cause any bugs
+  }
   # Calculate the correlation between the response variable and the CV predictions
   Cor <- stats::cor(cv_df$predicted.value, cv_df[[response_term]], use="pairwise.complete.obs")
   #plot(cv_df$predicted.value, cv_df[[response_term]])
@@ -405,7 +478,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 
 
   # Identify the data frame from the model
-  .df <- base::eval(fm$call$data)
+  .df <<- base::eval(fm$call$data)
 
   # Put ECs in a quosure
   #quo_ecs <- rlang::enquos(ECs)
@@ -419,36 +492,25 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
   # Use the columns to obtain a vector of EC terms
   ec_terms_char <- colnames(.df[cols_ecs])
 
+
   if(rlang::is_missing(ecs_in_bline_model)==TRUE){
     ecs_in_bline_model <- rlang::quos(NULL)
     ec_bl_terms_char <- c()
   } else {
     # # Identify which columns in the data frame consist of ECs in the baseline model
-    # cols_ecs_bl <- unlist(purrr::map(quo_ecs_bl, rlang::eval_tidy, vars))
     # # Use the columns to obtain a vector of EC terms
-    # ec_bl_terms_char <- colnames(.df[cols_ecs_bl])
-
-    #ecs_in_bline_model <- enexpr(ecs_in_bline_model)
     cols_bl_ecs <- unlist(purrr::map(ecs_in_bline_model, rlang::eval_tidy, vars))
     ec_bl_terms_char <- colnames(.df[cols_bl_ecs])
   }
 
 
-  #quo_ecs <- rlang::enquos(ECs)
-  #ECs_quo <- rlang::quos( c(PrePAW, PreCumRad))
-
   rmse_curr <- rmse_calc(.fm= curr_fm, .G=G, .E=E, .M=M, .trial=trial, .env_cv_df = env_cv_df,
-                         .cores=ncores, .kn=kn, .ecs_in_bline_model=ecs_in_bline_model)$Rmse # UPDATE THE ECS IN THE MODEL IN THE NEAR FUTURE
-  # Define a character vector version of the vector of ECs
+                         .cores=ncores, .kn=kn, .ecs_in_bline_model=ecs_in_bline_model)$Rmse
 
   # Remove cv_group from .df if it exists to stop bugs from happening
   if(length(which(colnames(.df)=="cv_group"))>0){
     .df <- .df %>%  dplyr::select(!"cv_group") %>% as.data.frame()
   }
-
-
-  #ec_terms_char <-  purrr::map_chr(quo_ecs, rlang::quo_text)
-  #unlist(purrr::map(quo_ecs, rlang::quo_text))
 
   continue <- TRUE
   while(continue==TRUE){
@@ -538,7 +600,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::maybe_missing()){
 
   # Identify the data frame from the model
-  .df <- base::eval(fm$call$data)
+  .df <<- base::eval(fm$call$data)
 
   # Define the current model to be the initial model
   curr_fm <- fm
@@ -580,12 +642,9 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
   ecs_in_curr_bl_model <- ecs_in_bline_model
 
 
-
   # Run the algorithm for a single iteration to calculate rmse
   curr_rmse <- rmse_calc(.fm= curr_fm, .G=G, .E=E, .M=M, .trial=trial, .env_cv_df = env_cv_df,
                          .cores=ncores, .kn=kn, .ecs_in_bline_model=ecs_in_curr_bl_model)$Rmse
-
-
 
 
   while(continue_ec_search==TRUE){

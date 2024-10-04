@@ -177,53 +177,81 @@ margin <- function(terms, ec, G, M, df){
   if (is.na(ec) || ec == "") {
     stop("The 'ec' parameter is NA or an empty character.")
   }
-
+  #putting together index of letters and symbols
+  letter_array <- c(toupper(letters))
   # Define marginality matrix based upon whether M is categorical or continuous
-  if(is.factor(df[[.M]])==TRUE ){
-    # # Create a matrix determining the marginality
-    terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G")
+  if(is.null(.M)==TRUE){
+    if(is.numeric(df[[ec]])==TRUE){
+      # # Create a matrix determining the marginality
+      terms_possible <- c("spl(x, k = 6)", "spl(x, k = 6):G")
+      
+      terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
+      rownames(terms_matrix) <- terms_possible
+      colnames(terms_matrix) <- terms_possible
+      
+      # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
+      terms_matrix[1,] <- c(TRUE, TRUE)
+      terms_matrix[2,] <- c(FALSE, TRUE)
+      # Output error message if EC is not continuous
+    } else {
+      stop("The environmental covariate must be numeric when management practice is missing")
+    }
 
-    terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
-    rownames(terms_matrix) <- terms_possible
-    colnames(terms_matrix) <- terms_possible
-
-    # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
-    # Note THAT THIS MATRIX IS NON-SYMMETRIC
-    #rownames(terms_matrix)[5]
-    terms_matrix[1,] <- c(TRUE, TRUE, TRUE, TRUE)
-    terms_matrix[2,] <- c(FALSE, TRUE, FALSE, TRUE)
-    terms_matrix[3,] <- c(FALSE, FALSE, TRUE, TRUE)
-    terms_matrix[4,] <- c(FALSE, FALSE, FALSE, TRUE)
-
-    #putting together index of letters and symbols
-    letter_array <- c(toupper(letters))
+  } else if(is.factor(df[[.M]])==TRUE ){
+    if(is.numeric(df[[ec]])==TRUE){
+      # # Create a matrix determining the marginality
+      terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G")
+      
+      terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
+      rownames(terms_matrix) <- terms_possible
+      colnames(terms_matrix) <- terms_possible
+      
+      # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
+      # Note THAT THIS MATRIX IS NON-SYMMETRIC
+      terms_matrix[1,] <- c(TRUE, TRUE, TRUE, TRUE)
+      terms_matrix[2,] <- c(FALSE, TRUE, FALSE, TRUE)
+      terms_matrix[3,] <- c(FALSE, FALSE, TRUE, TRUE)
+      terms_matrix[4,] <- c(FALSE, FALSE, FALSE, TRUE)
+      # Output error message if EC is not continuous
+    } else {
+      stop("The environmental covariate must be numeric when management practice categorical")
+    }
   } else {
-    # # Create a matrix determining the marginality
-    terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G","spl(M, k = 6):x","spl(M, k = 6):x:G","spl(M, k = 6):spl(x, k = 6)","spl(M, k = 6):spl(x, k = 6):G")
-
-    terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
-    rownames(terms_matrix) <- terms_possible
-    colnames(terms_matrix) <- terms_possible
-
-    # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
-    # Note THAT THIS MATRIX IS NON-SYMMETRIC
-    #rownames(terms_matrix)[5]
-    terms_matrix[1,] <- c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE)
-    terms_matrix[2,] <- c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE)
-    terms_matrix[3,] <- c(FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE)
-    terms_matrix[4,] <- c(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, TRUE)
-    terms_matrix[5,] <- c(FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE)
-    terms_matrix[6,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE)
-    terms_matrix[7,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE)
-    terms_matrix[8,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE)
-
-    #putting together index of letters and symbols
-    letter_array <- c(toupper(letters))
+    if(is.numeric(df[[ec]])==TRUE){
+      # # Create a matrix determining the marginality
+      terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G","spl(M, k = 6):x","spl(M, k = 6):x:G","spl(M, k = 6):spl(x, k = 6)","spl(M, k = 6):spl(x, k = 6):G")
+      
+      terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
+      rownames(terms_matrix) <- terms_possible
+      colnames(terms_matrix) <- terms_possible
+      
+      # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
+      terms_matrix[1,] <- c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE)
+      terms_matrix[2,] <- c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE)
+      terms_matrix[3,] <- c(FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE)
+      terms_matrix[4,] <- c(FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, TRUE)
+      terms_matrix[5,] <- c(FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE)
+      terms_matrix[6,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE)
+      terms_matrix[7,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE)
+      terms_matrix[8,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE)
+    } else {
+      # # Create a matrix determining the marginality
+      terms_possible <- c("spl(M, k = 6):x","spl(M, k = 6):x:G")
+      
+      terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
+      rownames(terms_matrix) <- terms_possible
+      colnames(terms_matrix) <- terms_possible
+      
+      # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
+      terms_matrix[1,] <- c(TRUE, TRUE)
+      terms_matrix[2,] <- c(FALSE, TRUE)
+    }
   }
-
   # Replace ec, G, and M with their corresponding names
   terms <- stringr::str_replace_all(terms, ec,"x")
-  terms <- stringr::str_replace_all(terms, M,"M")
+  if(is.null(.M)==FALSE){
+    terms <- stringr::str_replace_all(terms, M,"M")
+  }
   terms <- stringr::str_replace_all(terms, G,"G")
   # Set the default margin values to 4 (i.e. all terms are nested by default)
   margin_value <- rep(4, length(terms))
@@ -284,22 +312,20 @@ dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M, randomTerms){
   # Add spl_equiv_ec_terms to wald_df
   new_wald_df <- wald_df
   new_wald_df$spl_equiv_ec <- stringr::str_replace_all(rownames(wald_df), spl_ec_terms_char)
-
-  # Subset vector to include only elements with replacements (i.e., those containing 'spl(')
-  new_wald_df$spl_equiv_M <- stringr::str_replace_all(rownames(wald_df), .M, paste0("spl(", .M, ")"))
-
-
-  # Subset vector to include only elements with replacements (i.e., those containing 'spl(')
-  #spline_equiv_ec_terms <-
-  #spline_equiv_density_terms <-  str_replace_all(rownames(wald_df), .M, paste0("spl(", .M, ")"))
-
   # For each EC, check if the equivalent spline term is in the current model w.r.t spl(EC) & spl(M)
   new_wald_df$pres_spl_ec <- new_wald_df$spl_equiv_ec%in%randomTerms
-  new_wald_df$pres_M_ec <- new_wald_df$spl_equiv_M%in%randomTerms
-
-  # Define a logical variable indicating if each term can be dropped
-  new_wald_df$canDrop <- !(new_wald_df$pres_spl_ec | new_wald_df$pres_M_ec)
-
+  
+  if(is.factor(.M)==TRUE){
+    # Subset vector to include only elements with replacements (i.e., those containing 'spl(')
+    new_wald_df$spl_equiv_M <- stringr::str_replace_all(rownames(wald_df), .M, paste0("spl(", .M, ")"))
+    new_wald_df$pres_M_ec <- new_wald_df$spl_equiv_M%in%randomTerms
+    
+    # Define a logical variable indicating if each term can be dropped
+    new_wald_df$canDrop <- !(new_wald_df$pres_spl_ec | new_wald_df$pres_M_ec)
+  } else {
+    # Define a logical variable indicating if each term can be dropped
+    new_wald_df$canDrop <- !(new_wald_df$pres_spl_ec)
+  }
   return(new_wald_df)
 }
 
@@ -397,23 +423,43 @@ ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=6){
   random_bl_terms <- .fm$call$random
   residual_terms <- .fm$call$residual
 
-  fixed_ec_terms <-  rlang::expr(!!.ec + !!.M:!!.ec + !!.ec:!!.G + !!.M:!!.ec:!!.G)
-  # Change the random terms based on whether M is categorical or continuous
-  if(is.factor(.df[[.M]])==TRUE){
-    random_ec_terms <- rlang::expr(spl(!!.ec, k=!!.kn) + !!.M:spl(!!.ec, k=!!.kn) + spl(!!.ec, k=!!.kn):!!.G +
-                                     !!.M:spl(!!.ec, k=!!.kn):!!.G)
-  } else{
-    random_ec_terms <- rlang::expr(spl(!!.ec, k=!!.kn) + !!.M:spl(!!.ec, k=!!.kn) + spl(!!.ec, k=!!.kn):!!.G +
-                                     !!.M:spl(!!.ec, k=!!.kn):!!.G +
-                                     spl(!!.M, k=!!.kn):!!.ec + spl(!!.M, k=!!.kn):!!.ec:!!.G +
-                                     spl(!!.M, k=!!.kn):spl(!!.ec, k=!!.kn) +
-                                     spl(!!.M, k=!!.kn):spl(!!.ec, k=!!.kn):!!.G)
+  # CONTINUE HERE (NEED TO ACCOUNT FOR CONTINUOUS ECs)
+  if(is.null(.M)==TRUE){
+    fixed_ec_terms <-  rlang::expr(!!.ec + !!.ec:!!.G)
+    if(is.numeric(.df[[.ec]])==TRUE){
+      random_ec_terms <- rlang::expr(spl(!!.ec, k=!!.kn) + spl(!!.ec, k=!!.kn):!!.G)
+      random_terms <- rlang::parse_expr(paste0( rlang::expr_text(random_bl_terms), "+", rlang::expr_text( random_ec_terms)))
+
+    } else {
+      random_terms <- rlang::parse_expr(paste0( rlang::expr_text(random_bl_terms)))
+    }
+  } else if(is.factor(.df[[.M]])==TRUE){ # Change the random terms based on whether M is categorical or continuous
+      fixed_ec_terms <-  rlang::expr(!!.ec + !!.M:!!.ec + !!.ec:!!.G + !!.M:!!.ec:!!.G)
+      if(is.numeric(.df[[.ec]])==TRUE){
+        random_ec_terms <- rlang::expr(spl(!!.ec, k=!!.kn) + !!.M:spl(!!.ec, k=!!.kn) + spl(!!.ec, k=!!.kn):!!.G +
+                                         !!.M:spl(!!.ec, k=!!.kn):!!.G)
+        random_terms <- rlang::parse_expr(paste0( rlang::expr_text(random_bl_terms), "+", rlang::expr_text( random_ec_terms)))
+
+      } else {
+        random_terms <- rlang::parse_expr(paste0(rlang::expr_text(random_bl_terms)))
+      }
+  } else { #For continuous M
+      # Change the random terms based on whether M is categorical or continuous
+      fixed_ec_terms <-  rlang::expr(!!.ec + !!.M:!!.ec + !!.ec:!!.G + !!.M:!!.ec:!!.G)
+      if(is.numeric(.df[[.ec]])==TRUE){
+        random_ec_terms <- rlang::expr(spl(!!.ec, k=!!.kn) + !!.M:spl(!!.ec, k=!!.kn) + spl(!!.ec, k=!!.kn):!!.G +
+                                         !!.M:spl(!!.ec, k=!!.kn):!!.G +
+                                         spl(!!.M, k=!!.kn):!!.ec + spl(!!.M, k=!!.kn):!!.ec:!!.G +
+                                         spl(!!.M, k=!!.kn):spl(!!.ec, k=!!.kn) +
+                                         spl(!!.M, k=!!.kn):spl(!!.ec, k=!!.kn):!!.G)
+        random_terms <- rlang::parse_expr(paste0( rlang::expr_text(random_bl_terms), "+", rlang::expr_text( random_ec_terms)))
+      } else {
+        random_ec_terms <- rlang::expr(spl(!!.M, k=!!.kn):!!.ec + spl(!!.M, k=!!.kn):!!.ec:!!.G)
+        random_terms <- rlang::parse_expr(paste0( rlang::expr_text(random_bl_terms), "+", rlang::expr_text( random_ec_terms)))
+      }
   }
-
-
   # Combine all fixed terms into a single expression respectively
   fixed_terms <- rlang::parse_expr(paste0( rlang::expr_text(fixed_bl_terms), "+", rlang::expr_text( fixed_ec_terms)))
-  random_terms <- rlang::parse_expr(paste0( rlang::expr_text(random_bl_terms), "+", rlang::expr_text( random_ec_terms)))
 
   asr_call <- rlang::expr(asreml::asreml(fixed = !!response_term ~ !!fixed_terms,
                                          random = !!random_terms, # removed tilde as the tilde should already be in the call
