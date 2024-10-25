@@ -411,12 +411,12 @@ simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M){
   # Define the current model
   curr_fm <- .fm
   KeepSimplifying <- TRUE
-  # Keep rotating between simplifying the fixed effects and the random effects intil the model can be no longer simplified
+  # Keep rotating between simplifying the fixed effects and the random effects until the model can be no longer simplified
   while(KeepSimplifying==TRUE){
     new_random_fm <- ec_random_model(.fm=curr_fm, .ecs_in_model= .ecs_in_model, .G=.G, .M=.M)
     new_fm <- ec_fixed_model(.fm=new_random_fm, .ecs_in_model= .ecs_in_model, .G=.G, .M=.M)
     # If the fixed and random terms are exactly the same, then finish simplifying the model, otherwise keep running to try and simplify further
-    if( (new_fm$call$fixed==curr_fm$call$fixed) && (new_fm$call$random==curr_fm$call$random) ){
+    if( (new_fm$call$fixed==curr_fm$call$fixed) ){ # && (new_fm$call$random==curr_fm$call$random)
       KeepSimplifying <- FALSE
     } else {
       curr_fm <- new_fm

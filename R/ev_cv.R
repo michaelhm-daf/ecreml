@@ -89,89 +89,6 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   # Make cv_group a factor (should already be a factor though!)
   .df$cv_group <- factor(.df$cv_group)
 
-
-  # Define a table that will be used to generate model predictions later on
-  # Identify the classify list and levels of each factor based on whether a trial term is included in the model
-  if(rlang::quo_is_null(.ecs_in_bline_model[[1]])==TRUE){
-    # Change the classify terms if M is missing from the baseline model
-    if(is.null(.M)==TRUE){
-      expr_list <- rlang::exprs(!!.E, !!.G)
-      # Create list of values we want to predict for
-      aux_parallel <- unique(.df[,purrr::map_chr(expr_list, rlang::as_string)]) %>%
-        purrr::modify_if(is.numeric, round, digits=4) # Round all continuous variables to 4 decimal places
-
-      # Define the terms corresponding to G, M and ec to appear in the classify statement
-      classify_terms <- rlang::expr(!!.G)
-      # Use expr_text() to add quotations around the expression
-      classify_terms <- rlang::expr_text(classify_terms)
-
-      # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
-      levels_list <- list(aux_parallel[[.G]])
-
-      # Now give the headings of the levels_list names
-      names(levels_list) <- c(rlang::expr_text(.G))
-    } else {
-      expr_list <- rlang::exprs(!!.E, !!.G, !!.M)
-      # Create list of values we want to predict for
-      aux_parallel <- unique(.df[,purrr::map_chr(expr_list, rlang::as_string)]) %>%
-        purrr::modify_if(is.numeric, round, digits=4) # Round all continuous variables to 4 decimal places
-      # Remove rows where M is NA (need to check that the code still works when M is a factor!!)
-      aux_parallel <- aux_parallel[!is.na(aux_parallel[[.M]]),]
-
-      # Define the terms corresponding to G, M and ec to appear in the classify statement
-      classify_terms <- rlang::expr(!!.G:!!.M)
-      # Use expr_text() to add quotations around the expression
-      classify_terms <- rlang::expr_text(classify_terms)
-
-      # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
-      levels_list <- list(aux_parallel[[.G]],
-                          aux_parallel[[.M]])
-
-      # Now give the headings of the levels_list names
-      names(levels_list) <- c(rlang::expr_text(.G), rlang::expr_text(.M))
-    }
-  } else {
-    if(is.null(.M)==TRUE){
-      expr_list <- rlang::exprs(!!.E, !!.G)
-
-      # define a tibble version of .df so that the next line works correctly for 1 baseline EC
-      df_tib <- tibble::as_tibble(.df)
-
-      # Create list of values we want to predict for
-      aux_parallel <- unique(df_tib[, c(purrr::map_chr(expr_list, rlang::as_string),colnames(df_tib[,baseline_ec_cols]))]) %>%
-        purrr::modify_if(is.numeric, round, digits=4) %>% # Round all continuous variables to 4 decimal places
-        as.data.frame()
-
-      bl_ecs_colon <- rlang::parse_expr(paste(colnames(.df[baseline_ec_cols]), collapse=":"))
-      # Define the terms corresponding to G, M and ec to appear in the classify statement
-      classify_terms <- rlang::expr(!!.G:!!bl_ecs_colon)
-      # Use expr_text() to add quotations around the expression
-      classify_terms <-  gsub("\\(|\\)", "", rlang::expr_text(classify_terms)) # Remove all parentheses from the character string
-      # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
-      levels_list <- purrr::map(aux_parallel[,-1], as.vector) # Remove the .E column which should always be column 1
-    } else {
-      expr_list <- rlang::exprs(!!.E, !!.G, !!.M)
-
-      # define a tibble version of .df so that the next line works correctly for 1 baseline EC
-      df_tib <- tibble::as_tibble(.df)
-
-      # Create list of values we want to predict for
-      aux_parallel <- unique(df_tib[, c(purrr::map_chr(expr_list, rlang::as_string),colnames(df_tib[,baseline_ec_cols]))]) %>%
-        purrr::modify_if(is.numeric, round, digits=4) %>% # Round all continuous variables to 4 decimal places
-        as.data.frame()
-      # Remove rows where M is NA (need to check that the code still works when M is a factor!!)
-      aux_parallel <- aux_parallel[!is.na(aux_parallel[[.M]]),]
-
-
-      bl_ecs_colon <- rlang::parse_expr(paste(colnames(.df[baseline_ec_cols]), collapse=":"))
-      # Define the terms corresponding to G, M and ec to appear in the classify statement
-      classify_terms <- rlang::expr(!!.G:!!.M:!!bl_ecs_colon)
-      # Use expr_text() to add quotations around the expression
-      classify_terms <-  gsub("\\(|\\)", "", rlang::expr_text(classify_terms)) # Remove all parentheses from the character string
-      # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
-      levels_list <- purrr::map(aux_parallel[,-1], as.vector) # Remove the .E column which should always be column 1
-    }
-  }
   # Used the cross-validation data frame to determine the total number of folds
   v <- length(levels(.df$cv_group))
 
@@ -179,6 +96,7 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   total_cores <- parallel::detectCores()
   cl <- parallel::makeCluster(min(c(total_cores[1]-1, .cores)))
   doParallel::registerDoParallel(cl)
+  parallel::clusterExport(cl, "parallel_predict_list") # Should only be required when testing
 
   # Use foreach to perform parallel programming when implementing the cross validation scheme
   cv_pred <- foreach::foreach(i=c(1:v), .combine=rbind,
@@ -379,26 +297,29 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                           # Run the asreml model
                           subset_fm <- eval(subset_call)
 
+                          # Generate table of predictions
+                          predict_info <- parallel_predict_list(.df=.df, subset_df=subset_df, .ec=NULL, .G=.G, .E=.E,
+                                                                .M=.M, baseline_ec_cols = baseline_ec_cols)
+
                           # Obtain predictions for all environments (tested & untested) for subsetted model
-                          if(length(levels_list)>1){
+                          if(length(predict_info$levels_list)>1){
                             subset_pred <- asreml::predict.asreml(object=subset_fm,
-                                                                  classify= classify_terms,
-                                                                  levels=levels_list,
+                                                                  classify= predict_info$classify_terms,
+                                                                  levels=predict_info$levels_list,
                                                                   parallel=T, maxit=1, pworkspace="1gb")
                           } else {
                             subset_pred <- asreml::predict.asreml(object=subset_fm,
-                                                                  classify= classify_terms,
-                                                                  levels=levels_list,
+                                                                  classify= predict_info$classify_terms,
+                                                                  levels=predict_info$levels_list,
                                                                   parallel=F, maxit=1, pworkspace="1gb")
                           }
-
                           # Incorporate environment information into the table of predictions
-                          temp_subset.pred <- dplyr::left_join(subset_pred$pvals, aux_parallel,
-                                                                by=colnames(aux_parallel)[-1]) # Assumes the 1st column is always .E
+                          temp_subset.pred <- dplyr::left_join(subset_pred$pvals, predict_info$aux_parallel,
+                                                               by=colnames(predict_info$aux_parallel)[-1]) # Assumes the 1st column is always .E
 
                           # Subset so that the data frame only contains predictions from untested environments
                           temp_subset_pred <- temp_subset.pred[temp_subset.pred[[.E]]%in%setdiff(as.character(.env_cv_df[[.E]]),
-                                                                                                  as.character(unique(subset_df[[.E]]))), ]
+                                                                                                 as.character(unique(subset_df[[.E]]))), ]
 
                           temp_subset_pred # Need this at the end of parallel loop to tell the loop what to perform the rbind over
                         }
@@ -645,7 +566,6 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
   # Run the algorithm for a single iteration to calculate rmse
   curr_rmse <- rmse_calc(.fm= curr_fm, .G=G, .E=E, .M=M, .trial=trial, .env_cv_df = env_cv_df,
                          .cores=ncores, .kn=kn, .ecs_in_bline_model=ecs_in_curr_bl_model)$Rmse
-
 
   while(continue_ec_search==TRUE){
     ec_iter <- ec_iteration(fm = curr_fm, ECs = ecs_to_select_from, G=G, E=E, M=M, env_cv_df=env_cv_df, ncores=ncores, kn=kn, trial=trial, ecs_in_bline_model=ecs_in_curr_bl_model)

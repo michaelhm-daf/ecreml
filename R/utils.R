@@ -184,11 +184,11 @@ margin <- function(terms, ec, G, M, df){
     if(is.numeric(df[[ec]])==TRUE){
       # # Create a matrix determining the marginality
       terms_possible <- c("spl(x, k = 6)", "spl(x, k = 6):G")
-      
+
       terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
       rownames(terms_matrix) <- terms_possible
       colnames(terms_matrix) <- terms_possible
-      
+
       # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
       terms_matrix[1,] <- c(TRUE, TRUE)
       terms_matrix[2,] <- c(FALSE, TRUE)
@@ -201,11 +201,11 @@ margin <- function(terms, ec, G, M, df){
     if(is.numeric(df[[ec]])==TRUE){
       # # Create a matrix determining the marginality
       terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G")
-      
+
       terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
       rownames(terms_matrix) <- terms_possible
       colnames(terms_matrix) <- terms_possible
-      
+
       # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
       # Note THAT THIS MATRIX IS NON-SYMMETRIC
       terms_matrix[1,] <- c(TRUE, TRUE, TRUE, TRUE)
@@ -220,11 +220,11 @@ margin <- function(terms, ec, G, M, df){
     if(is.numeric(df[[ec]])==TRUE){
       # # Create a matrix determining the marginality
       terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G","spl(M, k = 6):x","spl(M, k = 6):x:G","spl(M, k = 6):spl(x, k = 6)","spl(M, k = 6):spl(x, k = 6):G")
-      
+
       terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
       rownames(terms_matrix) <- terms_possible
       colnames(terms_matrix) <- terms_possible
-      
+
       # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
       terms_matrix[1,] <- c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE)
       terms_matrix[2,] <- c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE)
@@ -237,11 +237,11 @@ margin <- function(terms, ec, G, M, df){
     } else {
       # # Create a matrix determining the marginality
       terms_possible <- c("spl(M, k = 6):x","spl(M, k = 6):x:G")
-      
+
       terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
       rownames(terms_matrix) <- terms_possible
       colnames(terms_matrix) <- terms_possible
-      
+
       # The matrix of type logical determines whether the term in the ith row is nested within the term in the jth column
       terms_matrix[1,] <- c(TRUE, TRUE)
       terms_matrix[2,] <- c(FALSE, TRUE)
@@ -314,12 +314,12 @@ dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M, randomTerms){
   new_wald_df$spl_equiv_ec <- stringr::str_replace_all(rownames(wald_df), spl_ec_terms_char)
   # For each EC, check if the equivalent spline term is in the current model w.r.t spl(EC) & spl(M)
   new_wald_df$pres_spl_ec <- new_wald_df$spl_equiv_ec%in%randomTerms
-  
+
   if(is.factor(.M)==TRUE){
     # Subset vector to include only elements with replacements (i.e., those containing 'spl(')
     new_wald_df$spl_equiv_M <- stringr::str_replace_all(rownames(wald_df), .M, paste0("spl(", .M, ")"))
     new_wald_df$pres_M_ec <- new_wald_df$spl_equiv_M%in%randomTerms
-    
+
     # Define a logical variable indicating if each term can be dropped
     new_wald_df$canDrop <- !(new_wald_df$pres_spl_ec | new_wald_df$pres_M_ec)
   } else {
@@ -555,4 +555,205 @@ icREML <- function(fm, scale=1, logdet=FALSE) {
 }
 
 
+parallel_predict_list <- function(.df, subset_df, .ec=NULL, .G, .E, .M, baseline_ec_cols=NULL ){
+  # Define a table that will be used to generate model predictions later on
+  # Identify the classify list and levels of each factor based on whether a trial term is included in the model
+  if(is.null(.ec)==TRUE){
+    if(is.null(baseline_ec_cols)==TRUE){
+      # Change the classify terms if M is missing from the baseline model
+      if(is.null(.M)==TRUE){
+        expr_list <- rlang::exprs(!!.E, !!.G) # E is kept in to ensure that if the same combination appears multiple times
+        #across environments, then that weighting is preserved in the cross validation scheme
+        # Create list of values we want to predict for
+        aux_parallel <- unique(.df[,purrr::map_chr(expr_list, rlang::as_string)]) %>%
+          purrr::modify_if(is.numeric, round, digits=4) # Round all continuous variables to 4 decimal places
+
+
+        # Identify which .G are not in the subsetted data frame at all
+        missing_g <- setdiff(levels(.df[[.G]]), levels(subset_df[[.G]]))
+        # Remove .G that are not in the subsetted data frame
+        aux_parallel <- aux_parallel[!aux_parallel[[.G]]%in%missing_g, ]
+        # Update factor levels of genotype term
+        aux_parallel[[.G]] <- factor(aux_parallel[[.G]])
+
+        # Define the terms corresponding to G, M and ec to appear in the classify statement
+        classify_terms <- rlang::expr(!!.G)
+        # Use expr_text() to add quotations around the expression
+        classify_terms <- rlang::expr_text(classify_terms)
+
+        # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+        levels_list <- list(aux_parallel[[.G]])
+
+        # Now give the headings of the levels_list names
+        names(levels_list) <- c(rlang::expr_text(.G))
+      } else {
+        expr_list <- rlang::exprs(!!.E, !!.G, !!.M)
+        # Create list of values we want to predict for
+        aux_parallel <- unique(.df[,purrr::map_chr(expr_list, rlang::as_string)]) %>%
+          purrr::modify_if(is.numeric, round, digits=4) # Round all continuous variables to 4 decimal places
+        # Remove rows where M is NA (need to check that the code still works when M is a factor!!)
+        aux_parallel <- aux_parallel[!is.na(aux_parallel[[.M]]),]
+
+        # Define the terms corresponding to G, M and ec to appear in the classify statement
+        classify_terms <- rlang::expr(!!.G:!!.M)
+        # Use expr_text() to add quotations around the expression
+        classify_terms <- rlang::expr_text(classify_terms)
+
+        # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+        levels_list <- list(aux_parallel[[.G]],
+                            aux_parallel[[.M]])
+
+        # Now give the headings of the levels_list names
+        names(levels_list) <- c(rlang::expr_text(.G), rlang::expr_text(.M))
+      }
+    } else {
+      if(is.null(.M)==TRUE){
+        expr_list <- rlang::exprs(!!.E, !!.G)
+
+        # define a tibble version of .df so that the next line works correctly for 1 baseline EC
+        df_tib <- tibble::as_tibble(.df)
+
+        # Create list of values we want to predict for
+        aux_parallel <- unique(df_tib[, c(purrr::map_chr(expr_list, rlang::as_string),colnames(df_tib[,baseline_ec_cols]))]) %>%
+          purrr::modify_if(is.numeric, round, digits=4) %>% # Round all continuous variables to 4 decimal places
+          as.data.frame()
+
+        # Identify which .G are not in the subsetted data frame at all
+        missing_g <- setdiff(levels(.df[[.G]]), levels(subset_df[[.G]]))
+        # Remove .G that are not in the subsetted data frame
+        aux_parallel <- aux_parallel[!aux_parallel[[.G]]%in%missing_g, ]
+        # Update factor levels of genotype term
+        aux_parallel[[.G]] <- factor(aux_parallel[[.G]])
+
+        bl_ecs_colon <- rlang::parse_expr(paste(colnames(.df[baseline_ec_cols]), collapse=":"))
+        # Define the terms corresponding to G, M and ec to appear in the classify statement
+        classify_terms <- rlang::expr(!!.G:!!bl_ecs_colon)
+        # Use expr_text() to add quotations around the expression
+        classify_terms <-  gsub("\\(|\\)", "", rlang::expr_text(classify_terms)) # Remove all parentheses from the character string
+        # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+        levels_list <- purrr::map(aux_parallel[,-1], as.vector) # Remove the .E column which should always be column 1
+      } else {
+        expr_list <- rlang::exprs(!!.E, !!.G, !!.M)
+
+        # define a tibble version of .df so that the next line works correctly for 1 baseline EC
+        df_tib <- tibble::as_tibble(.df)
+
+        # Create list of values we want to predict for
+        aux_parallel <- unique(df_tib[, c(purrr::map_chr(expr_list, rlang::as_string),colnames(df_tib[,baseline_ec_cols]))]) %>%
+          purrr::modify_if(is.numeric, round, digits=4) %>% # Round all continuous variables to 4 decimal places
+          as.data.frame()
+        # Remove rows where M is NA (need to check that the code still works when M is a factor!!)
+        aux_parallel <- aux_parallel[!is.na(aux_parallel[[.M]]),]
+
+
+        bl_ecs_colon <- rlang::parse_expr(paste(colnames(.df[baseline_ec_cols]), collapse=":"))
+        # Define the terms corresponding to G, M and ec to appear in the classify statement
+        classify_terms <- rlang::expr(!!.G:!!.M:!!bl_ecs_colon)
+        # Use expr_text() to add quotations around the expression
+        classify_terms <-  gsub("\\(|\\)", "", rlang::expr_text(classify_terms)) # Remove all parentheses from the character string
+        # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+        levels_list <- purrr::map(aux_parallel[,-1], as.vector) # Remove the .E column which should always be column 1
+      }
+    }
+  } else {
+    if(is.null(baseline_ec_cols)==TRUE){
+      # Change the classify terms if M is missing from the baseline model
+      if(is.null(.M)==TRUE){
+        expr_list <- rlang::exprs(!!.E, !!.G, !!.ec) # E is kept in to ensure that if the same combination appears multiple times
+        #across environments, then that weighting is preserved in the cross validation scheme
+        # Create list of values we want to predict for
+        aux_parallel <- unique(.df[,purrr::map_chr(expr_list, rlang::as_string)]) %>%
+          purrr::modify_if(is.numeric, round, digits=4) # Round all continuous variables to 4 decimal places
+
+        # Identify which .G are not in the subsetted data frame at all
+        missing_g <- setdiff(levels(.df[[.G]]), levels(subset_df[[.G]]))
+        # Remove .G that are not in the subsetted data frame
+        aux_parallel <- aux_parallel[!aux_parallel[[.G]]%in%missing_g, ]
+        # Update factor levels of genotype term
+        aux_parallel[[.G]] <- factor(aux_parallel[[.G]])
+
+        # Define the terms corresponding to G, M and ec to appear in the classify statement
+        classify_terms <- rlang::expr(!!.G:!!.ec)
+        # Use expr_text() to add quotations around the expression
+        classify_terms <- rlang::expr_text(classify_terms)
+
+        # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+        levels_list <- list(aux_parallel[[.G]],
+                            aux_parallel[[.ec]])
+
+        # Now give the headings of the levels_list names
+        names(levels_list) <- c(rlang::expr_text(.G), rlang::expr_text(.ec))
+      } else {
+        expr_list <- rlang::exprs(!!.E, !!.G, !!.M, !!.ec)
+        # Create list of values we want to predict for
+        aux_parallel <- unique(.df[,purrr::map_chr(expr_list, rlang::as_string)]) %>%
+          purrr::modify_if(is.numeric, round, digits=4) # Round all continuous variables to 4 decimal places
+        # Remove rows where M is NA (need to check that the code still works when M is a factor!!)
+        aux_parallel <- aux_parallel[!is.na(aux_parallel[[.M]]),]
+
+        # Define the terms corresponding to G, M and ec to appear in the classify statement
+        classify_terms <- rlang::expr(!!.G:!!.M:!!.ec)
+        # Use expr_text() to add quotations around the expression
+        classify_terms <- rlang::expr_text(classify_terms)
+
+        # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+        levels_list <- list(aux_parallel[[.G]],
+                            aux_parallel[[.M]],
+                            aux_parallel[[.ec]])
+
+        # Now give the headings of the levels_list names
+        names(levels_list) <- c(rlang::expr_text(.G), rlang::expr_text(.M), rlang::expr_text(.ec))
+      }
+    } else {
+      if(is.null(.M)==TRUE){
+        expr_list <- rlang::exprs(!!.E, !!.G, !!.ec)
+
+        # define a tibble version of .df so that the next line works correctly for 1 baseline EC
+        df_tib <- tibble::as_tibble(.df)
+
+        # Create list of values we want to predict for
+        aux_parallel <- unique(df_tib[, c(purrr::map_chr(expr_list, rlang::as_string),colnames(df_tib[,baseline_ec_cols]))]) %>%
+          purrr::modify_if(is.numeric, round, digits=4) %>% # Round all continuous variables to 4 decimal places
+          as.data.frame()
+
+        # Identify which .G are not in the subsetted data frame at all
+        missing_g <- setdiff(levels(.df[[.G]]), levels(subset_df[[.G]]))
+        # Remove .G that are not in the subsetted data frame
+        aux_parallel <- aux_parallel[!aux_parallel[[.G]]%in%missing_g, ]
+        # Update factor levels of genotype term
+        aux_parallel[[.G]] <- factor(aux_parallel[[.G]])
+
+        bl_ecs_colon <- rlang::parse_expr(paste(colnames(.df[baseline_ec_cols]), collapse=":"))
+        # Define the terms corresponding to G, M and ec to appear in the classify statement
+        classify_terms <- rlang::expr(!!.G:!!bl_ecs_colon:!!.ec)
+        # Use expr_text() to add quotations around the expression
+        classify_terms <-  gsub("\\(|\\)", "", rlang::expr_text(classify_terms)) # Remove all parentheses from the character string
+        # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+        levels_list <- purrr::map(aux_parallel[,-1], as.vector) # Remove the .E column which should always be column 1
+      } else {
+        expr_list <- rlang::exprs(!!.E, !!.G, !!.M, !!.ec)
+
+        # define a tibble version of .df so that the next line works correctly for 1 baseline EC
+        df_tib <- tibble::as_tibble(.df)
+
+        # Create list of values we want to predict for
+        aux_parallel <- unique(df_tib[, c(purrr::map_chr(expr_list, rlang::as_string),colnames(df_tib[,baseline_ec_cols]))]) %>%
+          purrr::modify_if(is.numeric, round, digits=4) %>% # Round all continuous variables to 4 decimal places
+          as.data.frame()
+        # Remove rows where M is NA (need to check that the code still works when M is a factor!!)
+        aux_parallel <- aux_parallel[!is.na(aux_parallel[[.M]]),]
+
+
+        bl_ecs_colon <- rlang::parse_expr(paste(colnames(.df[baseline_ec_cols]), collapse=":"))
+        # Define the terms corresponding to G, M and ec to appear in the classify statement
+        classify_terms <- rlang::expr(!!.G:!!.M:!!bl_ecs_colon:!!.ec)
+        # Use expr_text() to add quotations around the expression
+        classify_terms <-  gsub("\\(|\\)", "", rlang::expr_text(classify_terms)) # Remove all parentheses from the character string
+        # Generate the list of levels that will be used to calculate the predictions during the cross validation scheme
+        levels_list <- purrr::map(aux_parallel[,-1], as.vector) # Remove the .E column which should always be column 1
+      }
+    }
+  }
+  return(list(levels_list=levels_list, aux_parallel=aux_parallel, classify_terms=classify_terms))
+}
 
