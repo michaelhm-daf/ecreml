@@ -10,6 +10,12 @@
 #'
 #' @return A data frame with 2 columns. The first column is the environment term. The 2nd column is the cross validation group that each environment hsa been randomly allocated to.
 #' @examples
+#' library(agridat)
+#' data("ortiz.tomato.yield")
+#' # Subset to obtain a character vector of unique environments
+#' unique_envs <- as.character(levels(ortiz.tomato.yield$env))
+#' # Partition the environments into 6 groups/folds for k-folds cross validation
+#' cv_groups(unique_envs, folds=6)
 #'
 #' @export
 cv_groups <- function(E, folds=6) {
@@ -57,6 +63,8 @@ cv_groups <- function(E, folds=6) {
 #' @param .kn The number of knot points for the spline component of the model for the environment covariate being tested.
 #' Note that this is ignored of the environmental covariate is a factor
 #' @param .ecs_in_bline_model An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.
+#' @param aliased Type logical with default set to FALSE. An option that enables aliased predictions from \code{predict.asreml} to be outputted.
+#' We do not recommend setting this option to TRUE. As its inclusion in only for debugging purposes.
 #'
 #' @return A list with components:
 #' \itemize{
@@ -67,10 +75,31 @@ cv_groups <- function(E, folds=6) {
 #'  \item \code{Resids_cv}: The squared differences between the baseline model and the cross-validation predictions for each \code{GxExM} combination
 #'  }
 #' @examples
+#' library(asreml)
+#' data(SorghumYield)
+#' data(SorghumCvGroup)
+#' # Run baseline model
+#' baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
+#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'    at(Trial,'Breeza 1'):Column +
+#'    Trial + Env +
+#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    str(~Trial:Genotype + Trial:Genotype:density,
+#'        ~corh(2):id(48)) +
+#'    str(~Env:Genotype + Env:Genotype:density,
+#'        ~corh(2):id(136)),
+#'   residual=~ dsum(~units|ResidualTOS),
+#'   data = SorghumYield,
+#'   na.action=na.method(x='include'),
+#'   maxit=30, workspace="1Gb")
+#'  ec_rmse_summary <- ec_cv_full(.fm=baseline_asr, .ec=rlang::expr(PrePAW), .G =rlang::expr(Genotype), .E = rlang::expr(Env),
+#'                    .M = rlang::expr(density), .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
+#'  ec_rmse_summary$Rmse
 #'
 #' @export
 ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
-                       .cores=2, .kn=6, .ecs_in_bline_model=rlang::quos(NULL)){
+                       .cores=2, .kn=6, .ecs_in_bline_model=rlang::quos(NULL), aliased=FALSE){
   # Obtain the data frame from the baseline model
   .df  <- base::eval(.fm$call$data)
   # Now also round all continuous variables in df to 4 decimal places to avoid errors later on due to merging of data frames
@@ -140,7 +169,7 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   total_cores <- parallel::detectCores()
   cl <- parallel::makeCluster(min(c(total_cores[1]-1, .cores)))
   doParallel::registerDoParallel(cl)
-  parallel::clusterExport(cl, "parallel_predict_list") # Should only be required when testing
+  parallel::clusterExport(cl, "parallel_predict_list") # Should only be required when testing, nope still needed for the package it seems
 
   # Use foreach to perform parallel programming when implementing the cross validation scheme
   cv_pred <- foreach::foreach(i=c(1:v), .combine=rbind,
@@ -291,25 +320,25 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                                 # Change the model depending on whether M is a factor or a variate (i.e. continuous) or missing
                                 if(is.null(.M)==TRUE){
                                   # Define an expression for the fixed and random effect EC terms to be added in the updated model
-                                  fixed_ec_terms <- rlang::expr(!!.ec + !!.ec:!!.G + !!.ec + !!.ec:!!.G)
-                                  if(is.null(.trial)==FALSE){
-                                    # Define the random regression terms
-                                    random_str_terms <- rlang::expr(!!.trial:!!.G + !!.E:!!.G)
-                                  } else {
-                                    random_str_terms <- rlang::expr(!!.E:!!.G)
-                                  }
+                                  fixed_ec_terms <- rlang::expr(!!.ec + !!.ec:!!.G)
+                                  # if(is.null(.trial)==FALSE){               #This should be redundant because the random_str_terms should already appear in the random_bl_terms
+                                  #   # Define the random regression terms
+                                  #   random_str_terms <- rlang::expr(!!.trial:!!.G + !!.E:!!.G)
+                                  # } else {
+                                  #   random_str_terms <- rlang::expr(!!.E:!!.G)
+                                  #}
                                   if(is.double(.df[[.ec]])==TRUE){
                                     random_ec_terms <- rlang::expr(spl(!!.ec, k=!!.kn) + spl(!!.ec, k=!!.kn):!!.G)
 
                                     subset_call <- rlang::expr(asreml::asreml(fixed = !!response_term ~ !!fixed_bl_terms + !!fixed_ec_terms,
-                                                                              random =~ !!random_bl_terms + !!random_ec_terms + !!random_str_terms,
+                                                                              random =~ !!random_bl_terms + !!random_ec_terms,# + !!random_str_terms,
                                                                               residual=~ !!residual_bl_terms,
                                                                               data=subset_df,
                                                                               na.action=asreml::na.method(x='include'),
                                                                               aom=T, maxit=300))
                                   } else if(is.double(.df[[.ec]])==FALSE) {
                                     subset_call <- rlang::expr(asreml::asreml(fixed = !!response_term ~ !!fixed_bl_terms + !!fixed_ec_terms,
-                                                                              random =~ !!random_bl_terms + !!random_str_terms,
+                                                                              random =~ !!random_bl_terms,# + !!random_str_terms,
                                                                               residual=~ !!residual_bl_terms,
                                                                               data=subset_df,
                                                                               na.action=asreml::na.method(x='include'),
@@ -401,11 +430,13 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                                   subset_pred <- asreml::predict.asreml(object=subset_fm,
                                                                         classify= predict_info$classify_terms,
                                                                         levels=predict_info$levels_list,
-                                                                        parallel=T, maxit=1, pworkspace="1gb")
+                                                                        aliased=aliased,
+                                                                        parallel=T, maxit=30, pworkspace="1gb")
                                 } else {
                                   subset_pred <- asreml::predict.asreml(object=subset_fm,
                                                                         classify= predict_info$classify_terms,
                                                                         levels=predict_info$levels_list,
+                                                                        aliased=aliased,
                                                                         parallel=F, maxit=1, pworkspace="1gb")
                                 }
                                 # Incorporate environment information into the table of predictions
@@ -483,13 +514,36 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #'
 #' @return A list with components:
 #' \itemize{
-#'  \item \code{ec_selected}: The environmental covariate seected as minimising the RMSE (a scalar of type character).
+#'  \item \code{ec_selected}: The environmental covariate selected as minimising the RMSE (a scalar of type character).
 #'  compared with the predictions obtained with the environment covariate included in an untested environment.
 #'  The predictions are obtained internally using \code{asreml::predict.asreml}.
 #'  \item \code{summary_ecs}: A data frame with the RMSE and Pearson correlation for each environmental covariate considered during the forward selection procedure.
 #'  }
 #' @examples
-#'
+#' library(asreml)
+#' data(SorghumYield)
+#' data(SorghumCvGroup)
+#' # Run baseline model
+#' baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
+#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'    at(Trial,'Breeza 1'):Column +
+#'    Trial + Env +
+#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    str(~Trial:Genotype + Trial:Genotype:density,
+#'        ~corh(2):id(48)) +
+#'    str(~Env:Genotype + Env:Genotype:density,
+#'        ~corh(2):id(136)),
+#'   residual=~ dsum(~units|ResidualTOS),
+#'   data = SorghumYield,
+#'   na.action=na.method(x='include'),
+#'   maxit=30, workspace="1Gb")
+#' ec_search <- ec_finder(fm=baseline_asr, ECs= rlang::quos(PrePAW, PostPAW),
+#'     G= rlang::expr(Genotype), E = rlang::expr(Env),
+#'     M= rlang::expr(density), trial = rlang::expr(Trial),
+#'      env_cv_df=SorghumCvGroup)
+#' ec_search$ec_selected
+#' ec_search$summary_ecs
 #' @export
 ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
                       cores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::quos(NULL))
@@ -541,5 +595,14 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
   return_ecs_list <- list(ec_selected=ec_selected, summary_ecs = ec_df)
   return(return_ecs_list)
 }
+
+
+
+
+
+
+
+
+
 
 

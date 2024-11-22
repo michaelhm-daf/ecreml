@@ -27,7 +27,28 @@
 #'  \item \code{Resids_cv}: The squared differences between the baseline model and the cross-validation predictions for each \code{GxExM} combination
 #'  }
 #' @examples
-#'
+#' library(asreml)
+#' data(SorghumYield)
+#' data(SorghumCvGroup)
+#' # Run baseline model
+#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
+#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'    at(Trial,'Breeza 1'):Column +
+#'    Trial + Env +
+#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    str(~Trial:Genotype + Trial:Genotype:density,
+#'        ~corh(2):id(48)) +
+#'    str(~Env:Genotype + Env:Genotype:density,
+#'        ~corh(2):id(136)),
+#'   residual=~ dsum(~units|ResidualTOS),
+#'   data = SorghumYield,
+#'   na.action=na.method(x='include'),
+#'   maxit=30, workspace="1Gb")
+#' # Calculate the (average) root mean square error (rmse) of prediction
+#' baseline_rmse <- rmse_calc(.fm=baseline_asr, .G=rlang::expr(Genotype), .E=rlang::expr(Env), .M=rlang::expr(density),
+#'                   .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
+#' baseline_rmse$Rmse
 #' @export
 rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                       .cores=2, .kn=6, .ecs_in_bline_model=rlang::quos(NULL)){
@@ -248,14 +269,14 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                                 #response_term <- attr(.fm$formulae$fixed, "variables")[[2]]
                                 # Change the model depending on whether M is a factor or a variate (i.e. continuous) or missing
                                 if(is.null(.M)==TRUE){
-                                  if(is.null(.trial)==FALSE){
-                                    # Define the random regression terms
-                                    random_str_terms <- rlang::expr(!!.trial:!!.G + !!.E:!!.G)
-                                  } else {
-                                    random_str_terms <- rlang::expr(!!.E:!!.G)
-                                  }
+                                  # if(is.null(.trial)==FALSE){
+                                  #   # Define the random regression terms
+                                  #   random_str_terms <- rlang::expr(!!.trial:!!.G + !!.E:!!.G)
+                                  # } else {
+                                  #   random_str_terms <- rlang::expr(!!.E:!!.G)
+                                  # }
                                   subset_call <- rlang::expr(asreml::asreml(fixed = !!response_term ~ !!fixed_bl_terms,
-                                                                            random =~ !!random_bl_terms + !!random_str_terms,
+                                                                            random =~ !!random_bl_terms,# + !!random_str_terms,
                                                                             residual=~ !!residual_bl_terms,
                                                                             data=subset_df,
                                                                             na.action=asreml::na.method(x='include'),
@@ -384,7 +405,31 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #'  \item \code{rmse}: The value of the RMSE for the updated model.
 #'  }
 #' @examples
-#'
+#' library(asreml)
+#' data(SorghumYield)
+#' data(SorghumCvGroup)
+#' # Run baseline model
+#' baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
+#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'    at(Trial,'Breeza 1'):Column +
+#'    Trial + Env +
+#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    str(~Trial:Genotype + Trial:Genotype:density,
+#'        ~corh(2):id(48)) +
+#'    str(~Env:Genotype + Env:Genotype:density,
+#'        ~corh(2):id(136)),
+#'   residual=~ dsum(~units|ResidualTOS),
+#'   data = SorghumYield,
+#'   na.action=na.method(x='include'),
+#'   maxit=30, workspace="1Gb")
+#'   ec1_model_asr <- ec_iteration(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreCumRad),
+#'       G= rlang::expr(Genotype), E = rlang::expr(Env),
+#'       M= rlang::expr(density), trial = rlang::expr(Trial),
+#'       env_cv_df=SorghumCvGroup)
+#' ec1_model_asr$selected_ec
+#' ec1_model_asr$fm$call
+#' ec1_model_asr$rmse
 #' @export
 ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::maybe_missing()){
   curr_fm <- fm
@@ -433,17 +478,20 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
     .df <- .df %>%  dplyr::select(!"cv_group") %>% as.data.frame()
   }
 
+  # Search for an EC
+  ec_search <- ec_finder(fm=curr_fm, ECs= ECs,
+                         G= G, E = E,
+                         M= M, trial = trial,
+                         env_cv_df=env_cv_df,
+                         ecs_in_bline_model=ecs_in_bline_model,
+                         cores=ncores, kn=kn)
+
+  # Determine the candidate EC model
+  ec_summary <- ec_search$summary_ecs
+
   continue <- TRUE
   while(continue==TRUE){
-    ec_search <- ec_finder(fm=curr_fm, ECs= ECs,
-                           G= G, E = E,
-                           M= M, trial = trial,
-                           env_cv_df=env_cv_df,
-                           ecs_in_bline_model=ecs_in_bline_model,
-                           cores=ncores, kn=kn)
 
-    # Determine the candidate EC model
-    ec_summary <- ec_search$summary_ecs
     which_selected <- which(ec_summary$RMSE==min(ec_summary$RMSE, na.rm=TRUE))
     ec_candid <- ec_summary$EC[which_selected]
     rmse_candid <- ec_summary$RMSE[which_selected]
@@ -454,11 +502,11 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
       # First define the model with every EC term for the candidate EC
       candid_fm <- ec_full_model_constructor(.fm=curr_fm, .ec=ec_candidate, .G=G, .M=M, .kn=6)
 
-      ec_candidate <- rlang::parse_quos(ec_candid, rlang::global_env())
+      ec_candidate <- rlang::parse_quos(ec_candid, rlang::current_env())
       # Remove non-significant fixed and random effects for the ECs in the candidate model
       candid_fm <- simplify_ec_model(.fm=candid_fm, .ecs_in_model = ec_candidate, .G=rlang::expr_text(G), .M=rlang::expr_text(M))
 
-      ec_candidate_bl <- rlang::parse_quos(c(ec_bl_terms_char, ec_candid), rlang::global_env())
+      ec_candidate_bl <- rlang::parse_quos(c(ec_bl_terms_char, ec_candid), rlang::current_env())
       # Calculate the RMSE of the simplified model
       rmse_candid <- rmse_calc(.fm= candid_fm, .G=G, .E=E, .M=M, .trial=trial, .env_cv_df = env_cv_df,
                                .cores=ncores, .kn=kn, .ecs_in_bline_model=ec_candidate_bl)$Rmse
@@ -512,11 +560,35 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 #' @return A list with 2 components:
 #' \itemize{
 #'  \item \code{fm}: An updated model with the all of the important environmental covariate included in the model along with only the significant
-#'  fixed and random effects pertaining to each environmental covariate identified.
+#'  fixed and random effect terms pertaining to each environmental covariate identified.
 #'  \item \code{rmse}: The value of the RMSE for the final environmental covariate model
 #'  }
 #' @examples
-#'
+#' library(asreml)
+#' data(SorghumYield)
+#' data(SorghumCvGroup)
+#' # Run baseline model
+#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
+#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'    at(Trial,'Breeza 1'):Column +
+#'    Trial + Env +
+#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    str(~Trial:Genotype + Trial:Genotype:density,
+#'        ~corh(2):id(48)) +
+#'    str(~Env:Genotype + Env:Genotype:density,
+#'        ~corh(2):id(136)),
+#'   residual=~ dsum(~units|ResidualTOS),
+#'   data = SorghumYield,
+#'   na.action=na.method(x='include'),
+#'   maxit=30, workspace="1Gb")
+#' # Expect this next line of code to take 5-10 minutes to run on your machine
+#' ec_model_asr <- ec_all(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreCumRad),
+#'        G= rlang::expr(Genotype), E = rlang::expr(Env),
+#'        M= rlang::expr(density), trial = rlang::expr(Trial),
+#'        env_cv_df=SorghumCvGroup)
+#' ec_model_asr$fm$call
+#' ec_model_asr$rmse
 #' @export
 ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::maybe_missing()){
 
@@ -563,12 +635,13 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
   ecs_in_curr_bl_model <- ecs_in_bline_model
 
 
-  # Run the algorithm for a single iteration to calculate rmse
+  # Run the algorithm for a single iteration to calculate the INITIAL RMSE
   curr_rmse <- rmse_calc(.fm= curr_fm, .G=G, .E=E, .M=M, .trial=trial, .env_cv_df = env_cv_df,
                          .cores=ncores, .kn=kn, .ecs_in_bline_model=ecs_in_curr_bl_model)$Rmse
 
   while(continue_ec_search==TRUE){
-    ec_iter <- ec_iteration(fm = curr_fm, ECs = ecs_to_select_from, G=G, E=E, M=M, env_cv_df=env_cv_df, ncores=ncores, kn=kn, trial=trial, ecs_in_bline_model=ecs_in_curr_bl_model)
+    ec_iter <- ec_iteration(fm = curr_fm, ECs = ecs_to_select_from, G=G, E=E, M=M, env_cv_df=env_cv_df,
+                            ncores=ncores, kn=kn, trial=trial, ecs_in_bline_model=ecs_in_curr_bl_model)
     ec_candid_fm <- ec_iter$fm
     candid_rmse <- ec_iter$rmse
     # If the model has been has changed, set the current model to be the candidate model, otherwise finish
@@ -579,7 +652,7 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
       col_candid_ec <- unlist(vars[ec_iter$selected_ec])
       # Update ECs in current (baseline?!) model
       cols_bl_ecs <- c(cols_bl_ecs, col_candid_ec)
-      ecs_in_curr_bl_model <- rlang::parse_quos(names(vars[cols_bl_ecs]), env=rlang::global_env())
+      ecs_in_curr_bl_model <- rlang::parse_quos(names(vars[cols_bl_ecs]), env=rlang::current_env())
       # Remove selected EC from list of candidate ECs to choose from in the next iteration
       cols_ecs <- cols_ecs[cols_ecs!=col_candid_ec]
       # If statement to finish the model if there are no more ECs to choose from
@@ -587,7 +660,7 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
         break
       }
       # Update the quosure of ECs to select from for the next iteration
-      ecs_to_select_from <- rlang::parse_quos(names(vars[cols_ecs]), env=rlang::global_env())
+      ecs_to_select_from <- rlang::parse_quos(names(vars[cols_ecs]), env=rlang::current_env()) # Check if environment is correct for functions
     } else {
       continue_ec_search <- FALSE
     }

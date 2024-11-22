@@ -46,7 +46,7 @@ An example is when each TOS within a trial constitutes an environment for the pu
 \value{
 A list with components:
 \itemize{
-\item \code{ec_selected}: The environmental covariate seected as minimising the RMSE (a scalar of type character).
+\item \code{ec_selected}: The environmental covariate selected as minimising the RMSE (a scalar of type character).
 compared with the predictions obtained with the environment covariate included in an untested environment.
 The predictions are obtained internally using \code{asreml::predict.asreml}.
 \item \code{summary_ecs}: A data frame with the RMSE and Pearson correlation for each environmental covariate considered during the forward selection procedure.
@@ -59,4 +59,30 @@ Predcitions are then obtained in an untested environment, which are then compare
 The EC which minimises the RMSE is selected from the forward selection procedure.
 If management practice \code{.M} and the environment covariates \code{.ec} are factors, then the predictions will be for each unique combination of \code{GxExM}.
 If \code{.M} is continuous, then predictions will be very for every unique \code{.M} value observed in the multi-environment trial data.
+}
+\examples{
+library(asreml)
+data(SorghumYield)
+data(SorghumCvGroup)
+# Run baseline model
+baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
+  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+   at(Trial,'Breeza 1'):Column +
+   Trial + Env +
+   spl(density, k=6) + spl(density, k=6):Genotype +
+   str(~Trial:Genotype + Trial:Genotype:density,
+       ~corh(2):id(48)) +
+   str(~Env:Genotype + Env:Genotype:density,
+       ~corh(2):id(136)),
+  residual=~ dsum(~units|ResidualTOS),
+  data = SorghumYield,
+  na.action=na.method(x='include'),
+  maxit=30, workspace="1Gb")
+ec_search <- ec_finder(fm=baseline_asr, ECs= rlang::quos(PrePAW, PostPAW),
+    G= rlang::expr(Genotype), E = rlang::expr(Env),
+    M= rlang::expr(density), trial = rlang::expr(Trial),
+     env_cv_df=SorghumCvGroup)
+ec_search$ec_selected
+ec_search$summary_ecs
 }

@@ -20,10 +20,30 @@
 #' @param .G The genotype term in the model as a character
 #' @param .M The management practice term in the model a character
 #'
-#' @return An updated asreml model such that the non-significant environmental covariate spline terms have been removed from the model.
+#' @return An updated asreml model such that the continuous non-significant environmental covariate spline and management terms have been removed from the model.
 #'
 #' @examples
-#'
+#' library(asreml)
+#' data(SorghumYield)
+#' data(SorghumCvGroup)
+#' # Run baseline model
+#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
+#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'    at(Trial,'Breeza 1'):Column +
+#'    Trial + Env +
+#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    str(~Trial:Genotype + Trial:Genotype:density,
+#'        ~corh(2):id(48)) +
+#'    str(~Env:Genotype + Env:Genotype:density,
+#'        ~corh(2):id(136)),
+#'   residual=~ dsum(~units|ResidualTOS),
+#'   data = SorghumYield,
+#'   na.action=na.method(x='include'),
+#'   maxit=30, workspace="1Gb")
+#' postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
+#' random_simplify_asr <- ec_random_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
+#' random_simplify_asr$call
 #' @export
 ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
 
@@ -68,7 +88,7 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
   curr_fm <- .fm
 
   #Calculate the current AIC value
-  AIC_curr <- icREML(list(curr_fm))$AIC
+  AIC_curr <- lmmtools::icREML(list(curr_fm))$AIC
 
   # Set removed terms to be empty by default
   removed_terms <- rlang::maybe_missing()
@@ -169,7 +189,7 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
             print('Dropping a RANDOM effects term from the model')
             curr_fm <-  eval(curr_call) # Note that the order of terms in the random terms is changed based on the order of the teams in the fixed effects??
             #Update the AIC value for the model (should be the same as before??)
-            AIC_curr <- icREML(list(curr_fm))$AIC
+            AIC_curr <- lmmtools::icREML(list(curr_fm))$AIC
             # Update varcomp table
             varcomp_curr_df <- summary(curr_fm)$varcomp
             # Make the last call ec data frame equal to the most up to date data table
@@ -192,7 +212,7 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
           test_fm <- eval(test_call)
 
           #Calculate the AIC value for the model being considered
-          AIC_test <- icREML(list(test_fm))$AIC
+          AIC_test <- lmmtools::icREML(list(test_fm))$AIC
           # If the AIC of the test model is better, then set all the current model object to the test object
           if(AIC_test <= AIC_curr){
             curr_call <- test_call
@@ -210,7 +230,6 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
           }
         }
       }
-
       if(length(temp_ec_terms_df$Term)==0){
         continue_model_search <- FALSE
       } else if(length(temp_ec_terms_df2$Term)!=length(temp_ec_terms_df$Term)){
@@ -268,7 +287,28 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
 #' @return An updated asreml model such that the non-significant environmental covariate fixed effect terms have been removed from the model.
 #'
 #' @examples
-#'
+#' library(asreml)
+#' data(SorghumYield)
+#' data(SorghumCvGroup)
+#' # Run baseline model
+#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
+#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'    at(Trial,'Breeza 1'):Column +
+#'    Trial + Env +
+#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    str(~Trial:Genotype + Trial:Genotype:density,
+#'        ~corh(2):id(48)) +
+#'    str(~Env:Genotype + Env:Genotype:density,
+#'        ~corh(2):id(136)),
+#'   residual=~ dsum(~units|ResidualTOS),
+#'   data = SorghumYield,
+#'   na.action=na.method(x='include'),
+#'   maxit=30, workspace="1Gb")
+#' postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
+#' random_simplify_asr <- ec_random_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
+#' fixed_simplify_asr <- ec_fixed_model(.fm=random_simplify_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
+#' fixed_simplify_asr$call
 #' @export
 ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
 
@@ -401,7 +441,27 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
 #' @return An updated asreml model such that all non-significant environmental covariate terms have been removed from the model.
 #'
 #' @examples
-#'
+#' library(asreml)
+#' data(SorghumYield)
+#' data(SorghumCvGroup)
+#' # Run baseline model
+#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
+#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'    at(Trial,'Breeza 1'):Column +
+#'    Trial + Env +
+#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    str(~Trial:Genotype + Trial:Genotype:density,
+#'        ~corh(2):id(48)) +
+#'    str(~Env:Genotype + Env:Genotype:density,
+#'        ~corh(2):id(136)),
+#'   residual=~ dsum(~units|ResidualTOS),
+#'   data = SorghumYield,
+#'   na.action=na.method(x='include'),
+#'   maxit=30, workspace="1Gb")
+#' postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
+#' simplify_asr <- simplify_ec_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
+#' simplify_asr$call
 #' @export
 simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M){
 

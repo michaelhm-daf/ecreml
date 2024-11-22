@@ -11,9 +11,9 @@ ec_full_model_constructor(.fm, .ec, .G, .M, .kn = 6)
 
 \item{.ec}{An expression with the environmental covariate to be included in the model.}
 
-\item{.G}{A character indicating which term in the model is the genotype component.}
+\item{.G}{An expression indicating which term in the model is the genotype component.}
 
-\item{.M}{A character indicating which term in the model is the management practice component.}
+\item{.M}{An expression indicating which term in the model is the management practice component.}
 
 \item{.kn}{The number of knot points to be included for the spline terms related to the environmental covariate \code{.ec} being added to the model.}
 }
@@ -22,4 +22,26 @@ An asreml model object with all of the fixed and random terms related to the env
 }
 \description{
 Runs an updated asreml model with the additional fixed and random effects term for the environmental covariate added to the model.
+}
+\examples{
+library(asreml)
+data(SorghumYield)
+data(SorghumCvGroup)
+baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
+  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+   at(Trial,'Breeza 1'):Column +
+   Trial + Env +
+   spl(density, k=6) + spl(density, k=6):Genotype +
+   str(~Trial:Genotype + Trial:Genotype:density,
+       ~corh(2):id(48)) +
+   str(~Env:Genotype + Env:Genotype:density,
+       ~corh(2):id(136)),
+  residual=~ dsum(~units|ResidualTOS),
+  data = SorghumYield,
+  na.action=na.method(x='include'),
+  maxit=30, workspace="1Gb")
+postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
+postPAW_full_asr$call
+
 }

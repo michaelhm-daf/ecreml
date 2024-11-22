@@ -54,3 +54,27 @@ The predictions are obtained internally using \code{asreml::predict.asreml}.
 This function calculates the RMSE for the current model by implementing the k-fold cross validation and then calculating the
 predictions obtained in an untested environment.
 }
+\examples{
+library(asreml)
+data(SorghumYield)
+data(SorghumCvGroup)
+# Run baseline model
+baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
+  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+   at(Trial,'Breeza 1'):Column +
+   Trial + Env +
+   spl(density, k=6) + spl(density, k=6):Genotype +
+   str(~Trial:Genotype + Trial:Genotype:density,
+       ~corh(2):id(48)) +
+   str(~Env:Genotype + Env:Genotype:density,
+       ~corh(2):id(136)),
+  residual=~ dsum(~units|ResidualTOS),
+  data = SorghumYield,
+  na.action=na.method(x='include'),
+  maxit=30, workspace="1Gb")
+# Calculate the (average) root mean square error (rmse) of prediction
+baseline_rmse <- rmse_calc(.fm=baseline_asr, .G=rlang::expr(Genotype), .E=rlang::expr(Env), .M=rlang::expr(density),
+                  .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
+baseline_rmse$Rmse
+}

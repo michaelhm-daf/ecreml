@@ -14,7 +14,8 @@ ec_cv_full(
   .env_cv_df = NULL,
   .cores = 2,
   .kn = 6,
-  .ecs_in_bline_model = rlang::quos(NULL)
+  .ecs_in_bline_model = rlang::quos(NULL),
+  aliased = FALSE
 )
 }
 \arguments{
@@ -42,6 +43,9 @@ Also note that by setting this greater than 2 (i.e. the default) will require ad
 Note that this is ignored of the environmental covariate is a factor}
 
 \item{.ecs_in_bline_model}{An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.}
+
+\item{aliased}{Type logical with default set to FALSE. An option that enables aliased predictions from \code{predict.asreml} to be outputted.
+We do not recommend setting this option to TRUE. As its inclusion in only for debugging purposes.}
 }
 \value{
 A list with components:
@@ -58,4 +62,28 @@ This function includes an environment covariate (EC) into the model and then per
 from both the baseline model and the model with an environmental covariate included.
 If management practice \code{.M} and the environment covariates \code{.ec} are factors, then the predictions will be for each unique combination of \code{GxExM}.
 If \code{.M} is continuous, then predictions will be very for every unique \code{.M} value observed in the multi-environment trial data.
+}
+\examples{
+library(asreml)
+data(SorghumYield)
+data(SorghumCvGroup)
+# Run baseline model
+baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
+  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+   at(Trial,'Breeza 1'):Column +
+   Trial + Env +
+   spl(density, k=6) + spl(density, k=6):Genotype +
+   str(~Trial:Genotype + Trial:Genotype:density,
+       ~corh(2):id(48)) +
+   str(~Env:Genotype + Env:Genotype:density,
+       ~corh(2):id(136)),
+  residual=~ dsum(~units|ResidualTOS),
+  data = SorghumYield,
+  na.action=na.method(x='include'),
+  maxit=30, workspace="1Gb")
+ ec_rmse_summary <- ec_cv_full(.fm=baseline_asr, .ec=rlang::expr(PrePAW), .G =rlang::expr(Genotype), .E = rlang::expr(Env),
+                   .M = rlang::expr(density), .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
+ ec_rmse_summary$Rmse
+
 }

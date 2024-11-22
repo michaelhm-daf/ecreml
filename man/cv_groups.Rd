@@ -17,3 +17,12 @@ A data frame with 2 columns. The first column is the environment term. The 2nd c
 \description{
 Generates the cross validation groups for each environment to go into. These groups are then used for the environmental covariate selection procedure.
 }
+\examples{
+library(agridat)
+data("ortiz.tomato.yield")
+# Subset to obtain a character vector of unique environments
+unique_envs <- as.character(levels(ortiz.tomato.yield$env))
+# Partition the environments into 6 groups/folds for k-folds cross validation
+cv_groups(unique_envs, folds=6)
+
+}

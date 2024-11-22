@@ -5,9 +5,7 @@
 #'
 #' @return A character vector
 #'
-#' @examples
-#'
-#' @export
+
 expr_to_terms <- function(expr) {
   expr_char <- rlang::expr_text(expr)
 
@@ -54,9 +52,7 @@ expr_to_terms <- function(expr) {
 #'
 #' @return An expression to be included in an asreml call.
 #'
-#' @examples
-#'
-#' @export
+
 # Write a function to subtract one expression from another larger expression
 subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
   # Convert the expressions to character vectors
@@ -170,9 +166,7 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
 #'
 #' @return A vector of type double indicating the hierarchical structure of the random terms in the model for a particular environmental covariate
 #'
-#' @examples
-#'
-#' @export
+
 margin <- function(terms, ec, G, M, df){
   if (is.na(ec) || ec == "") {
     stop("The 'ec' parameter is NA or an empty character.")
@@ -180,7 +174,7 @@ margin <- function(terms, ec, G, M, df){
   #putting together index of letters and symbols
   letter_array <- c(toupper(letters))
   # Define marginality matrix based upon whether M is categorical or continuous
-  if(is.null(.M)==TRUE){
+  if(is.null(M)==TRUE){
     if(is.numeric(df[[ec]])==TRUE){
       # # Create a matrix determining the marginality
       terms_possible <- c("spl(x, k = 6)", "spl(x, k = 6):G")
@@ -197,7 +191,7 @@ margin <- function(terms, ec, G, M, df){
       stop("The environmental covariate must be numeric when management practice is missing")
     }
 
-  } else if(is.factor(df[[.M]])==TRUE ){
+  } else if(is.factor(df[[M]])==TRUE ){
     if(is.numeric(df[[ec]])==TRUE){
       # # Create a matrix determining the marginality
       terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G")
@@ -249,7 +243,7 @@ margin <- function(terms, ec, G, M, df){
   }
   # Replace ec, G, and M with their corresponding names
   terms <- stringr::str_replace_all(terms, ec,"x")
-  if(is.null(.M)==FALSE){
+  if(is.null(M)==FALSE){
     terms <- stringr::str_replace_all(terms, M,"M")
   }
   terms <- stringr::str_replace_all(terms, G,"G")
@@ -298,9 +292,7 @@ margin <- function(terms, ec, G, M, df){
 #' @param randomTerms Check if this is still needed in the model
 #'
 #' @return An updated Wald table with an additional column of type logical indicating whether each fixed effect term in the model can be dropped.
-#' @examples
 #'
-#' @export
 dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M, randomTerms){
   randomTerms <- attr(.fm$formulae$random, "term.labels") %>%
     stringr::str_replace_all(" ", "") %>%  #remove all spaces to stop any unexpected bugs from occurring
@@ -340,9 +332,7 @@ dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M, randomTerms){
 #' Use "\code{incremental}" for Type 1 sums of squares. See  \code{asreml::wald.asreml} for more information.
 #'
 #' @return An asreml model object with a new fixed effets model.
-#' @examples
 #'
-#' @export
 update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), ssType="conditional"){
 
   .df <<- base::eval(.fm$call$data)
@@ -394,12 +384,31 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), ssType="condition
 #'
 #' @param .fm An \code{asreml} model object without the environmental covariate in the model.
 #' @param .ec An expression with the environmental covariate to be included in the model.
-#' @param .G A character indicating which term in the model is the genotype component.
-#' @param .M A character indicating which term in the model is the management practice component.
+#' @param .G An expression indicating which term in the model is the genotype component.
+#' @param .M An expression indicating which term in the model is the management practice component.
 #' @param .kn  The number of knot points to be included for the spline terms related to the environmental covariate \code{.ec} being added to the model.
 #'
 #' @return An asreml model object with all of the fixed and random terms related to the environmental covariate \code{.ec} being added to the model.
 #' @examples
+#' library(asreml)
+#' data(SorghumYield)
+#' data(SorghumCvGroup)
+#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
+#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'    at(Trial,'Breeza 1'):Column +
+#'    Trial + Env +
+#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    str(~Trial:Genotype + Trial:Genotype:density,
+#'        ~corh(2):id(48)) +
+#'    str(~Env:Genotype + Env:Genotype:density,
+#'        ~corh(2):id(136)),
+#'   residual=~ dsum(~units|ResidualTOS),
+#'   data = SorghumYield,
+#'   na.action=na.method(x='include'),
+#'   maxit=30, workspace="1Gb")
+#' postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
+#' postPAW_full_asr$call
 #'
 #' @export
 ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=6){
@@ -471,89 +480,6 @@ ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=6){
   ec_full_fm <- eval(asr_call)
   return(ec_full_fm)
 }
-
-
-# Function icREML
-#
-#' For a list of fitted asreml objects, finds the AIC and BIC for each
-#' model in the list.
-#'
-#' This function calculates the AIC and BIC for each fitted asreml model in a list.
-#' Options are set and each model is updated.  The elements required for the AIC and
-#' BIC are then calculated. This function has been slightly modified from the version in the
-#' Verbyla (2019) paper
-#'
-#' @title Find the AIC and BIC for a set of models fitted using asreml
-#' @param fm A \code{list} of asreml fitted model objects
-#' @param scale A scalar to scale the variance matrix of the estimated
-#' fixed effects (to ensure numerical stability of a log-determinant).
-#' Default value is 1.
-#' @param logdet The log determinant that modifies the residual
-#' log-likelihood to form the full log-likelihood is to be included in the
-#' table.
-#' @return A data frame.  The data frame has the following components
-#' \itemize{
-#' \item \code{model} : the names of the models
-#' \item \code{loglik} : the full log-likelihood for each model
-#' \item \code{p} :  the number of fixed effects parameters for each model
-#' \item \code{q} : the number of (non-zero) variance parameters for each model.
-#' \item \code{b} : the number of variance parameters that are fixed or on the
-#' boundary.  These parameters are not counted in the AIC or BIC.
-#' \item \code{AIC} : the AIC for each model
-#' \item \code{BIC} : the BIC for each model
-#' \item \code{logdet} : the log-determinant used in adjusting the residual
-#' log-likelihood for each model
-#' }
-#' @examples
-#' oats_fm <- asreml::asreml( fixed=yield ~ Variety*Nitrogen,
-#'                            random =~ Blocks/Wplots,
-#'                            data = asreml::oats)
-#' icREML(fm=list(oats_fm))
-#'
-#' @author Ari Verbyla (ari.verbyla at csiro.au)
-#' @export
-icREML <- function(fm, scale=1, logdet=FALSE) {
-  if(!is.list(fm)) stop(" Models need to be in a list\n")
-  if(is.null(names(fm))) namesfm <- base::paste0("fm", 1:base::length(fm))
-  else namesfm <- names(fm)
-  #require(asreml)
-  asreml::asreml.options(Cfixed = TRUE, gammaPar=FALSE)
-  fm <- lapply(1:(base::length(fm)), function(el, fm) {
-    if(is.null(fm[[el]]$Cfixed)) {
-      cat(" Updating model ", names(fm)[el], " for likelihood calculation\n")
-      myfm <- fm[[el]]
-      out <- asreml::update.asreml(myfm, maxit=1) }
-    else {
-      print(el)
-      print(base::names(fm)[el])
-      out <- fm[[el]]
-    }
-    out}, fm=fm)
-  logl <- lapply(fm, function(el) el$loglik)
-  summ <- lapply(fm, function(el) summary(el, coef=TRUE)$coef.fixed)
-  which.X0 <- lapply(summ, function(el) !is.na(el[, "z.ratio"]))
-  p.0 <- lapply(which.X0, function(el) sum(el))
-  Cfixed <- lapply(fm, function(el) el$Cfixed)
-  logdetC <- lapply(1:(base::length(fm)), function(el, Cfixed, which.X0, scale) {
-    sum(log(svd(as.matrix(scale*Cfixed[[el]][which.X0[[el]], which.X0[[el]]]))$d))
-  }, Cfixed, which.X0, scale)
-  vparam <- lapply(fm, function(el) summary(el)$varcomp)
-  q.0 <- lapply(vparam, function(el) sum(!(el$bound == "F" | el$bound == "B")))
-  b.0 <- lapply(vparam, function(el) sum(el$bound == "F" | el$bound == "B"))
-  logl <- lapply(1:length(fm), function(el, logl, logdetC, p.0) {
-    logl[[el]] - logdetC[[el]]/2}, logl, logdetC, p.0)
-  aic <- unlist(lapply(1:length(fm), function(el, logl, p.0, q.0) {
-    -2*logl[[el]] + 2*(p.0[[el]] + q.0[[el]])}, logl, p.0, q.0))
-  bic <- unlist(lapply(1:length(fm), function(el, logl, p.0, q.0, fm) {
-    -2*logl[[el]] + log(fm[[el]]$nedf+p.0[[el]])*(p.0[[el]] + q.0[[el]])},
-    logl, p.0, q.0, fm))
-  results <- data.frame(model=namesfm, full.loglik = unlist(logl), p=unlist(p.0),
-                        q=unlist(q.0), b = unlist(b.0), AIC = aic, BIC = bic)
-  if(logdet) results$logdet <- unlist(logdetC)
-  row.names(results) <- 1:dim(results)[1]
-  results
-}
-
 
 parallel_predict_list <- function(.df, subset_df, .ec=NULL, .G, .E, .M, baseline_ec_cols=NULL ){
   # Define a table that will be used to generate model predictions later on

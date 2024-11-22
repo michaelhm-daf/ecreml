@@ -16,10 +16,33 @@ ec_random_model(.fm, .ecs_in_model, .G, .M)
 \item{.M}{The management practice term in the model a character}
 }
 \value{
-An updated asreml model such that the non-significant environmental covariate spline terms have been removed from the model.
+An updated asreml model such that the continuous non-significant environmental covariate spline and management terms have been removed from the model.
 }
 \description{
 Performs the backwards selection procedure for the random component of the model to obtain a parsimonious random effects model
 for the all environmental covariates currently in the model.
 Testing for the significance of random effect terms is performed using the AIC criteria at the REML parameter estimates (Verbyla 2019).
+}
+\examples{
+library(asreml)
+data(SorghumYield)
+data(SorghumCvGroup)
+# Run baseline model
+baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
+  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+   at(Trial,'Breeza 1'):Column +
+   Trial + Env +
+   spl(density, k=6) + spl(density, k=6):Genotype +
+   str(~Trial:Genotype + Trial:Genotype:density,
+       ~corh(2):id(48)) +
+   str(~Env:Genotype + Env:Genotype:density,
+       ~corh(2):id(136)),
+  residual=~ dsum(~units|ResidualTOS),
+  data = SorghumYield,
+  na.action=na.method(x='include'),
+  maxit=30, workspace="1Gb")
+postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
+random_simplify_asr <- ec_random_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
+random_simplify_asr$call
 }

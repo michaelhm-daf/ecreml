@@ -55,3 +55,30 @@ fixed and random effects pertaining to the environmental covariate identified.
 This function bring together the entire subset selection process to (i) identify the most important environmental covariate
 via the forward selection procedure and then drop the non-significant fixed and random terms from the model to achieve a parsimonious model.
 }
+\examples{
+library(asreml)
+data(SorghumYield)
+data(SorghumCvGroup)
+# Run baseline model
+baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
+  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+   at(Trial,'Breeza 1'):Column +
+   Trial + Env +
+   spl(density, k=6) + spl(density, k=6):Genotype +
+   str(~Trial:Genotype + Trial:Genotype:density,
+       ~corh(2):id(48)) +
+   str(~Env:Genotype + Env:Genotype:density,
+       ~corh(2):id(136)),
+  residual=~ dsum(~units|ResidualTOS),
+  data = SorghumYield,
+  na.action=na.method(x='include'),
+  maxit=30, workspace="1Gb")
+  ec1_model_asr <- ec_iteration(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreCumRad),
+      G= rlang::expr(Genotype), E = rlang::expr(Env),
+      M= rlang::expr(density), trial = rlang::expr(Trial),
+      env_cv_df=SorghumCvGroup)
+ec1_model_asr$selected_ec
+ec1_model_asr$fm$call
+ec1_model_asr$rmse
+}

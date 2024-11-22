@@ -47,7 +47,7 @@ An example is when each TOS within a trial constitutes an environment for the pu
 A list with 2 components:
 \itemize{
 \item \code{fm}: An updated model with the all of the important environmental covariate included in the model along with only the significant
-fixed and random effects pertaining to each environmental covariate identified.
+fixed and random effect terms pertaining to each environmental covariate identified.
 \item \code{rmse}: The value of the RMSE for the final environmental covariate model
 }
 }
@@ -55,4 +55,31 @@ fixed and random effects pertaining to each environmental covariate identified.
 This function combines all of the component functions required to complete the environment covariate selection algorithm for a given baseline model.
 The final output is an updated model containing each of the important ECs identified by the algorithm, along with the corresponding
 environmental covariate terms that are statistically significant.
+}
+\examples{
+library(asreml)
+data(SorghumYield)
+data(SorghumCvGroup)
+# Run baseline model
+baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
+  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+   at(Trial,'Breeza 1'):Column +
+   Trial + Env +
+   spl(density, k=6) + spl(density, k=6):Genotype +
+   str(~Trial:Genotype + Trial:Genotype:density,
+       ~corh(2):id(48)) +
+   str(~Env:Genotype + Env:Genotype:density,
+       ~corh(2):id(136)),
+  residual=~ dsum(~units|ResidualTOS),
+  data = SorghumYield,
+  na.action=na.method(x='include'),
+  maxit=30, workspace="1Gb")
+# Expect this next line of code to take 5-10 minutes to run on your machine
+ec_model_asr <- ec_all(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreCumRad),
+       G= rlang::expr(Genotype), E = rlang::expr(Env),
+       M= rlang::expr(density), trial = rlang::expr(Trial),
+       env_cv_df=SorghumCvGroup)
+ec_model_asr$fm$call
+ec_model_asr$rmse
 }
