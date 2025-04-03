@@ -169,11 +169,11 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   total_cores <- parallel::detectCores()
   cl <- parallel::makeCluster(min(c(total_cores[1]-1, .cores)))
   doParallel::registerDoParallel(cl)
-  parallel::clusterExport(cl, "parallel_predict_list") # Should only be required when testing, nope still needed for the package it seems
+  parallel::clusterExport(cl, "parallel_predict_list", envir=) # Should only be required when testing, nope still needed for the package it seems
 
   # Use foreach to perform parallel programming when implementing the cross validation scheme
   cv_pred <- foreach::foreach(i=c(1:v), .combine=rbind,
-                              .packages=c("asreml", "ASExtras4", "tidyverse","rlang")) %dopar% {
+                              .packages=c("asreml", "tidyverse","rlang")) %dopar% {
 
                                 # Create a subsetted version of the data frame
                                 subset_df <-  .df[!.df$cv_group%in%levels(.df$cv_group)[i],]
@@ -186,11 +186,20 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                                 # (iv) anything with the pipe operator |
                                 # (v) anything which says 'Intercept'
                                 # (vi) anything with 'spl' (i.e. any spline terms)
-                                which_continuous <- grep(":|at\\(|mv|\\(Intercept\\)|spl", .fm$factor.names)
+                                #factor_names <- .fm$factor.names
+                                factor_names <- names(.fm$noeff) # Need this for asreml 4.2
+                                # The bottom part needed for the latest version of asreml (UPDATE IN THE FUTURE)
+                                if(is.null(factor_names)==TRUE){
+                                  factor_names <- c(attr(.fm$formulae$fixed, "term.labels"),
+                                                    attr(.fm$formulae$random, "term.labels"))#,
+                                                   # attr(.fm$formulae$residual, "term.labels"))
+                                }
+                                which_continuous <- grep(":|at\\(|mv|\\(Intercept\\)|spl", factor_names)
                                 # Also remove the M term from list of factors if M is continuous
                                 if(is.null(.M)==FALSE){
                                   if(is.double(subset_df[[.M]])==TRUE){
-                                    remove_cont_M <- grep(rlang::expr_text(.M), .fm$factor.names)
+                                    #remove_cont_M <- grep(rlang::expr_text(.M), .fm$factor.names) #factor.names is in older version of R
+                                    remove_cont_M <- grep(rlang::expr_text(.M), factor_names)
                                     which_continuous <- unique(c(which_continuous,remove_cont_M))
                                   }
                                 }
@@ -200,7 +209,7 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                                   for(i in baseline_ec_cols){
                                     bl_ec <- subset_df[,i]
                                     if(is.double(subset_df[[i]])==TRUE){
-                                      remove_cont_ec <- grep(colnames(subset_df)[i] , .fm$factor.names)
+                                      remove_cont_ec <- grep(colnames(subset_df)[i] , factor_names)
                                       which_continuous <- unique(c(which_continuous, remove_cont_ec))
                                     }
                                   }
@@ -208,7 +217,7 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 
 
                                 # Probably good to check that the output of factor_terms is as expected
-                                factor_terms <- .fm$factor.names[-which_continuous]
+                                factor_terms <- factor_names[-which_continuous]
 
                                 # Re-factorise all the terms that are factors in the model for the subsetted data-frame
                                 #Using mutate() to convert specific columns to factors

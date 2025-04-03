@@ -352,6 +352,12 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
     wald_init_df$M <- marg
   }
 
+  # If denominator df cannot be calculated by asreml, use large sample
+  # approximation
+  if(length(is.na(wald_init_df$denDF)) > 0){
+    wald_init_df <- wald_approx_pvalue(wald_init_df)
+  }
+
   # Set current wald table to be equal to initial wald table
   # Set removed terms to be empty by default
   removed_terms <- rlang::maybe_missing()
@@ -360,7 +366,8 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
   #wald_curr_df$Margin <- factor(wald_curr_df$Margin) %>% as.integer()
 
   # Identify if the corresponding spline term is in the model for each EC
-  wald_curr_df <- dropFixedTerm(.fm, wald_df = wald_init_df, quo_ecs_in_model, .M, randomTerms=random_terms_curr)
+  wald_curr_df <- dropFixedTerm(.fm, wald_df = wald_init_df, quo_ecs_in_model,
+                                .M, randomTerms=random_terms_curr)
 
   # Do a for loop for each EC to drop terms from the model
   # Set j equal to the current max value of margin
@@ -411,6 +418,11 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
 
       #.fm <- eval(curr_call)
       wald_curr_df <- as.data.frame(.fm$aov)
+      # If denominator df cannot be calculated by asreml, use large sample
+      # approximation
+      if(length(is.na(wald_init_df$denDF)) > 0){
+        wald_curr_df <- wald_approx_pvalue(wald_curr_df)
+      }
       #.df  <- base::eval(.fm$call$data)
       # Define margin term as an integer by first defining it as a factor
       #wald_curr_df$Margin <- factor(wald_curr_df$Margin) %>% as.integer()

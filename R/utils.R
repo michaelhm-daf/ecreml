@@ -481,6 +481,21 @@ ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=6){
   return(ec_full_fm)
 }
 
+
+#' @title Creates the list of information required for asreml.predict with continuous variables
+#' @description
+#' Creates the list of information required for asreml.predict with continuous variables
+#'
+#' @param .df The data frame used in the core asreml model
+#' @param subset_df The data frame used in the subbsetted version during the cross validation procedure
+#' @param .ec An expression with the environmental covariate to be included in the model.
+#' @param .G An expression indicating which term in the model is the genotype component.
+#' @param .M An expression indicating which term in the model is the management practice component.
+#' @param baseline_ec_cols  A vector of integers indicating which columns in both \code{.df} and \code{subset_df} contain
+#' environmental covariates that are in the current model
+#'
+#' @return A list of information required for asreml.predict with continuous variables (TBC!)
+#' @export
 parallel_predict_list <- function(.df, subset_df, .ec=NULL, .G, .E, .M, baseline_ec_cols=NULL ){
   # Define a table that will be used to generate model predictions later on
   # Identify the classify list and levels of each factor based on whether a trial term is included in the model
@@ -683,3 +698,13 @@ parallel_predict_list <- function(.df, subset_df, .ec=NULL, .G, .E, .M, baseline
   return(list(levels_list=levels_list, aux_parallel=aux_parallel, classify_terms=classify_terms))
 }
 
+
+
+# if denDF is too difficult to calculate, automatically make it 30
+wald_approx_pvalue <- function(aov_df){
+  # Set the denDF tp be 30 for all terms as a large sample approximation
+  aov_df$denDF[is.na(aov_df$denDF)] <- 30
+  # Calculate p-values based on large same denDF
+  aov_df$Fprob <- 1-pf(q=aov_df$Fcon, df1=aov_df$df, df2=aov_df$denDF)
+  return(aov_df)
+}

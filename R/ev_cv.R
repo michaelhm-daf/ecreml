@@ -137,11 +137,11 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                                 # (iv) anything with the pipe operator |
                                 # (v) anything which says 'Intercept'
                                 # (vi) anything with 'spl' (i.e. any spline terms)
-                                which_continuous <- grep(":|at\\(|mv|\\(Intercept\\)|spl", .fm$factor.names)
+                                which_continuous <- grep(":|at\\(|mv|\\(Intercept\\)|spl", names(.fm$noeff))
                                 # Also remove the M term from list of factors if M is continuous
                                 if(is.null(.M)==FALSE){
                                   if(is.double(subset_df[[.M]])==TRUE){
-                                    remove_cont_M <- grep(rlang::expr_text(.M), .fm$factor.names)
+                                    remove_cont_M <- grep(rlang::expr_text(.M), names(.fm$noeff))
                                     which_continuous <- unique(c(which_continuous,remove_cont_M))
                                   }
                                 }
@@ -151,7 +151,7 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                                   for(i in baseline_ec_cols){
                                     bl_ec <- subset_df[,i]
                                     if(is.double(subset_df[[i]])==TRUE){
-                                      remove_cont_ec <- grep(colnames(subset_df)[i] , .fm$factor.names)
+                                      remove_cont_ec <- grep(colnames(subset_df)[i] , names(.fm$noeff))
                                       which_continuous <- unique(c(which_continuous, remove_cont_ec))
                                     }
                                   }
@@ -159,7 +159,8 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 
 
                                 # Probably good to check that the output of factor_terms is as expected
-                                factor_terms <- .fm$factor.names[-which_continuous]
+                                #factor_terms <- .fm$factor.names[-which_continuous]
+                                factor_terms <- names(.fm$noeff[-which_continuous]) # Need this for asreml 4.2
 
                                 # Re-factorise all the terms that are factors in the model for the subsetted data-frame
                                 #Using mutate() to convert specific columns to factors
@@ -672,6 +673,33 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
   final_list <- list(fm=final_fm, rmse=final_rmse)
   return(final_list)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
