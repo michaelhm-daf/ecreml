@@ -56,6 +56,7 @@ predictions obtained in an untested environment.
 }
 \examples{
 library(asreml)
+library(foreach)
 data(SorghumYield)
 data(SorghumCvGroup)
 # Run baseline model

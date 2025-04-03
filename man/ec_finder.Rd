@@ -62,6 +62,7 @@ If \code{.M} is continuous, then predictions will be very for every unique \code
 }
 \examples{
 library(asreml)
+library(foreach)
 data(SorghumYield)
 data(SorghumCvGroup)
 # Run baseline model

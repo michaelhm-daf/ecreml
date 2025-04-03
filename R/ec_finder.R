@@ -76,6 +76,7 @@ cv_groups <- function(E, folds=6) {
 #'  }
 #' @examples
 #' library(asreml)
+#' library(foreach)
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model
@@ -530,6 +531,7 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #'  }
 #' @examples
 #' library(asreml)
+#' library(foreach)
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model

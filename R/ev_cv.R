@@ -28,6 +28,7 @@
 #'  }
 #' @examples
 #' library(asreml)
+#' library(foreach)
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model
@@ -407,6 +408,7 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #'  }
 #' @examples
 #' library(asreml)
+#' library(foreach)
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model
@@ -566,6 +568,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 #'  }
 #' @examples
 #' library(asreml)
+#' library(foreach)
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model

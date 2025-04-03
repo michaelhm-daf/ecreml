@@ -58,6 +58,7 @@ environmental covariate terms that are statistically significant.
 }
 \examples{
 library(asreml)
+library(foreach)
 data(SorghumYield)
 data(SorghumCvGroup)
 # Run baseline model

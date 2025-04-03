@@ -57,6 +57,7 @@ via the forward selection procedure and then drop the non-significant fixed and 
 }
 \examples{
 library(asreml)
+library(foreach)
 data(SorghumYield)
 data(SorghumCvGroup)
 # Run baseline model
