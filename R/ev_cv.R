@@ -434,7 +434,8 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' ec1_model_asr$fm$call
 #' ec1_model_asr$rmse
 #' @export
-ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::maybe_missing()){
+ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
+                         ecs_in_bline_model=rlang::maybe_missing(), denDF="numeric"){
   curr_fm <- fm
   #quo_ecs_bl <- rlang::enquos(ecs_in_bline_model)
 
@@ -507,7 +508,8 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 
       ec_candidate <- rlang::parse_quos(ec_candid, rlang::current_env())
       # Remove non-significant fixed and random effects for the ECs in the candidate model
-      candid_fm <- simplify_ec_model(.fm=candid_fm, .ecs_in_model = ec_candidate, .G=rlang::expr_text(G), .M=rlang::expr_text(M))
+      candid_fm <- simplify_ec_model(.fm=candid_fm, .ecs_in_model = ec_candidate, .G=rlang::expr_text(G),
+                                     .M=rlang::expr_text(M), denDF=denDF)
 
       ec_candidate_bl <- rlang::parse_quos(c(ec_bl_terms_char, ec_candid), rlang::current_env())
       # Calculate the RMSE of the simplified model
@@ -594,7 +596,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 #' ec_model_asr$fm$call
 #' ec_model_asr$rmse
 #' @export
-ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::maybe_missing()){
+ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::maybe_missing(), denDF="numeric"){
 
   # Identify the data frame from the model
   .df <<- base::eval(fm$call$data)
@@ -645,7 +647,8 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
 
   while(continue_ec_search==TRUE){
     ec_iter <- ec_iteration(fm = curr_fm, ECs = ecs_to_select_from, G=G, E=E, M=M, env_cv_df=env_cv_df,
-                            ncores=ncores, kn=kn, trial=trial, ecs_in_bline_model=ecs_in_curr_bl_model)
+                            ncores=ncores, kn=kn, trial=trial,
+                            ecs_in_bline_model=ecs_in_curr_bl_model, denDF=denDF)
     ec_candid_fm <- ec_iter$fm
     candid_rmse <- ec_iter$rmse
     # If the model has been has changed, set the current model to be the candidate model, otherwise finish

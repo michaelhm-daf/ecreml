@@ -4,7 +4,7 @@
 \alias{ec_fixed_model}
 \title{Identify the most parsimonious EC fixed effects model}
 \usage{
-ec_fixed_model(.fm, .ecs_in_model, .G, .M)
+ec_fixed_model(.fm, .ecs_in_model, .G, .M, denDF = "numeric")
 }
 \arguments{
 \item{.fm}{The current \code{asreml} model object that the environmental covariate terms will be tested from.}

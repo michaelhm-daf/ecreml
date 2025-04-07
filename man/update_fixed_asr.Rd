@@ -4,7 +4,12 @@
 \alias{update_fixed_asr}
 \title{Run an asreml model with updated fixed effects component}
 \usage{
-update_fixed_asr(.fm, term = rlang::maybe_missing(), ssType = "conditional")
+update_fixed_asr(
+  .fm,
+  term = rlang::maybe_missing(),
+  denDF = "numeric",
+  ssType = "conditional"
+)
 }
 \arguments{
 \item{.fm}{An \code{asreml} model object}

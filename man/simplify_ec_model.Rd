@@ -4,7 +4,7 @@
 \alias{simplify_ec_model}
 \title{Identify the most parsimonious EC model}
 \usage{
-simplify_ec_model(.fm, .ecs_in_model, .G, .M)
+simplify_ec_model(.fm, .ecs_in_model, .G, .M, denDF = "numeric")
 }
 \arguments{
 \item{.fm}{The current \code{asreml} model object that the environmental covariate terms will be tested from.}

@@ -4,7 +4,7 @@
 \alias{dropFixedTerm}
 \title{Determine if corresponding spline term is present for each linear term}
 \usage{
-dropFixedTerm(.fm, wald_df, .ecs_in_model, .M, randomTerms)
+dropFixedTerm(.fm, wald_df, .ecs_in_model, .M)
 }
 \arguments{
 \item{.fm}{An \code{asreml} model object}

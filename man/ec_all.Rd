@@ -14,7 +14,8 @@ ec_all(
   ncores = 2,
   kn = 6,
   trial = NULL,
-  ecs_in_bline_model = rlang::maybe_missing()
+  ecs_in_bline_model = rlang::maybe_missing(),
+  denDF = "numeric"
 )
 }
 \arguments{

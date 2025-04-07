@@ -293,7 +293,7 @@ margin <- function(terms, ec, G, M, df){
 #'
 #' @return An updated Wald table with an additional column of type logical indicating whether each fixed effect term in the model can be dropped.
 #'
-dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M, randomTerms){
+dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M){
   randomTerms <- attr(.fm$formulae$random, "term.labels") %>%
     stringr::str_replace_all(" ", "") %>%  #remove all spaces to stop any unexpected bugs from occurring
     stringr::str_replace_all(",k=\\d+","") # Remove the term after the comma within each spl() function to help with matching with the fixed term
@@ -333,7 +333,7 @@ dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M, randomTerms){
 #'
 #' @return An asreml model object with a new fixed effets model.
 #'
-update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), ssType="conditional"){
+update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", ssType="conditional"){
 
   .df <<- base::eval(.fm$call$data)
   # Define an expression for the fixed and random effect EC terms to be added in the updated model
@@ -349,7 +349,7 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), ssType="condition
                                           data= .df,
                                           na.action = na.method(x = "include"),
                                           aom=T, maxit=30,
-                                          wald=list(denDF="numeric",
+                                          wald=list(denDF= !!denDF,
                                                     ssType= !!ssType)))
 
 
@@ -366,11 +366,28 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), ssType="condition
                                             data= .df,
                                             na.action = na.method(x = "include"),
                                             aom=T, maxit=30,
-                                            wald=list(denDF="numeric",
+                                            wald=list(denDF=!!denDF,
                                                       ssType="conditional")))
 
   }
   curr_fm <- eval(curr_call)
+  curr_fm$aov
+  if(denDF=="none"){
+    wald_df <- asreml::wald.asreml(curr_fm, denDF="none", ssType="conditional")$Wald
+    wald_df
+    curr_fm$aov[,colnames(curr_fm$aov)=="Finc"] <- wald_df[,colnames(wald_df)=="Wald(inc)"]
+    curr_fm$aov[,colnames(curr_fm$aov)=="Fcon"] <- wald_df[,colnames(wald_df)=="Wald(con)"]
+    curr_fm$aov[,colnames(curr_fm$aov)=="Fprob"] <- wald_df[,colnames(wald_df)=="Pr(chisq)"][,2]
+  }
+  # If the last term has no conditional F value, use the incremental value instead
+  h <- dim(curr_fm$aov)[1]
+  if(is.na(curr_fm$aov[,colnames(curr_fm$aov)=="Fprob"][h])){
+    curr_fm$aov[,colnames(curr_fm$aov)=="Fcon"][h] <- curr_fm$aov[,colnames(curr_fm$aov)=="Finc"][h]
+    curr_fm$aov[,colnames(curr_fm$aov)=="Fprob"][h] <- 1-pchisq(curr_fm$aov[,colnames(curr_fm$aov)=="Fcon"][h],
+                                                                curr_fm$aov[,colnames(curr_fm$aov)=="df"][h])
+    # Make margin term 1 more than the previous term (assums the previous term is a lower order interaction; MAY NEED TO FIX)
+    curr_fm$aov[,colnames(curr_fm$aov)=="M"][h] <- curr_fm$aov[,colnames(curr_fm$aov)=="M"][h-1] + 1
+  }
   return(curr_fm)
 }
 
@@ -708,3 +725,5 @@ wald_approx_pvalue <- function(aov_df){
   aov_df$Fprob <- 1-pf(q=aov_df$Fcon, df1=aov_df$df, df2=aov_df$denDF)
   return(aov_df)
 }
+
+

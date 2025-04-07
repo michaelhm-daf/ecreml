@@ -69,8 +69,8 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
                               ")")
 
   # First identify the random terms corresponding to one of the ECs in the model
-  which_random_ec_terms <- grep(ec_terms_for_grep, .fm$factor.names)
-  random_ec_terms <-  .fm$factor.names[which_random_ec_terms]
+  which_random_ec_terms <- grep(ec_terms_for_grep, names(.fm$noeff))
+  random_ec_terms <-  names(.fm$noeff)[which_random_ec_terms]
 
   # Place the EC terms into a data frame
   ec_terms_df <- data.frame(Term=random_ec_terms)
@@ -310,7 +310,7 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
 #' fixed_simplify_asr <- ec_fixed_model(.fm=random_simplify_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
 #' fixed_simplify_asr$call
 #' @export
-ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
+ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="numeric"){
 
   # Obtain the data frame from the baseline model
   # Note, use super assignment to modify .df in the global environment
@@ -338,24 +338,39 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
   which_fixed_ec_terms <- grep(ec_terms_for_grep, attr(.fm$formulae$fixed, "term.labels") )
   fixed_ec_terms <-  attr(.fm$formulae$fixed, "term.labels")[which_fixed_ec_terms]
 
-  .fm <- update_fixed_asr(.fm=.fm)
+  .fm <- update_fixed_asr(.fm=.fm, denDF=denDF)
 
   # Denote current model
   wald_init_df <- as.data.frame(.fm$aov)
+
+  # If denominator df cannot be calculated by asreml, use wald test instead
+  if( (denDF!="none") & (length(is.na(wald_init_df$denDF)) > 0) ){
+    #wald_init_df <- wald_approx_pvalue(wald_init_df)
+    denDF <- "none"
+    .fm <- update_fixed_asr(.fm=.fm, denDF=denDF)
+  }
+
+  # if(denDF=="none"){
+  #   wald_df <- asreml::wald.asreml(.fm, denDF="none", ssType="conditional")$Wald
+  #   wald_df
+  #   wald_init_df[,colnames(wald_init_df)=="Finc"] <- wald_df[,colnames(wald_df)=="Wald(inc)"]
+  #   wald_init_df[,colnames(wald_init_df)=="Fcon"] <- wald_df[,colnames(wald_df)=="Wald(con)"]
+  #   wald_init_df[,colnames(wald_init_df)=="Fprob"] <- wald_df[,colnames(wald_df)=="Pr(chisq)"][,2]
+  # }
   # If the last conditional F-value is NA, rerun and use incremental F-value instead
   h <- dim(wald_init_df)[1]
   if(is.na(wald_init_df$Fcon[h])){
-    wald_init_df$M[h] <- max(wald_init_df$M, na.rm=TRUE) + 1
-    marg <- wald_init_df$M
-    .fm <- update_fixed_asr(.fm=.fm, ssType="incremental")
-    wald_init_df <- as.data.frame(.fm$aov)
-    wald_init_df$M <- marg
-  }
-
-  # If denominator df cannot be calculated by asreml, use large sample
-  # approximation
-  if(length(is.na(wald_init_df$denDF)) > 0){
-    wald_init_df <- wald_approx_pvalue(wald_init_df)
+    if(denDF=="none"){
+      wald_init_df$Fcon[h] <- wald_init_df$Finc[h]
+      wald_init_df$Fprob <- 1-pchisq(wald_init_df$Fcon[h],
+                                     df=wald_init_df$df[h])
+    } else {
+      wald_init_df$M[h] <- max(wald_init_df$M, na.rm=TRUE) + 1
+      marg <- wald_init_df$M
+      .fm <- update_fixed_asr(.fm=.fm, denDF=denDF, ssType="incremental")
+      wald_init_df <- as.data.frame(.fm$aov)
+      wald_init_df$M <- marg
+    }
   }
 
   # Set current wald table to be equal to initial wald table
@@ -367,7 +382,7 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
 
   # Identify if the corresponding spline term is in the model for each EC
   wald_curr_df <- dropFixedTerm(.fm, wald_df = wald_init_df, quo_ecs_in_model,
-                                .M, randomTerms=random_terms_curr)
+                                .M)#, randomTerms=random_terms_curr)
 
   # Do a for loop for each EC to drop terms from the model
   # Set j equal to the current max value of margin
@@ -414,20 +429,22 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
       #                                         wald=list(denDF="numeric",
       #                                           ssType="conditional")))
 
-      .fm <- update_fixed_asr(.fm=.fm, term=removed_terms)
+      .fm <- update_fixed_asr(.fm=.fm, term=removed_terms, denDF=denDF)
 
       #.fm <- eval(curr_call)
       wald_curr_df <- as.data.frame(.fm$aov)
       # If denominator df cannot be calculated by asreml, use large sample
       # approximation
-      if(length(is.na(wald_init_df$denDF)) > 0){
-        wald_curr_df <- wald_approx_pvalue(wald_curr_df)
-      }
+
+      # if(length(is.na(wald_init_df$denDF)) > 0){
+      #   wald_curr_df <- wald_approx_pvalue(wald_curr_df)
+      # }
+
       #.df  <- base::eval(.fm$call$data)
       # Define margin term as an integer by first defining it as a factor
       #wald_curr_df$Margin <- factor(wald_curr_df$Margin) %>% as.integer()
       # Identify if the corresponding spline term is in the model for each EC
-      wald_curr_df <- dropFixedTerm(.fm,wald_curr_df, quo_ecs_in_model, .M, randomTerms=random_terms_curr)
+      wald_curr_df <- dropFixedTerm(.fm,wald_curr_df, quo_ecs_in_model, .M)# , randomTerms=random_terms_curr)
       j <- max(wald_curr_df$M)
     } else {
       continue_model_search <- FALSE
@@ -475,7 +492,7 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M){
 #' simplify_asr <- simplify_ec_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
 #' simplify_asr$call
 #' @export
-simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M){
+simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="numeric"){
 
   # Identify the data frame from the model
   .df <<- base::eval(.fm$call$data)
@@ -486,7 +503,7 @@ simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M){
   # Keep rotating between simplifying the fixed effects and the random effects until the model can be no longer simplified
   while(KeepSimplifying==TRUE){
     new_random_fm <- ec_random_model(.fm=curr_fm, .ecs_in_model= .ecs_in_model, .G=.G, .M=.M)
-    new_fm <- ec_fixed_model(.fm=new_random_fm, .ecs_in_model= .ecs_in_model, .G=.G, .M=.M)
+    new_fm <- ec_fixed_model(.fm=new_random_fm, .ecs_in_model= .ecs_in_model, .G=.G, .M=.M, denDF=denDF)
     # If the fixed and random terms are exactly the same, then finish simplifying the model, otherwise keep running to try and simplify further
     if( (new_fm$call$fixed==curr_fm$call$fixed) ){ # && (new_fm$call$random==curr_fm$call$random)
       KeepSimplifying <- FALSE
@@ -496,6 +513,17 @@ simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M){
   }
   return(new_fm)
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
