@@ -310,7 +310,7 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
 #' fixed_simplify_asr <- ec_fixed_model(.fm=random_simplify_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
 #' fixed_simplify_asr$call
 #' @export
-ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="numeric"){
+ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
 
   # Obtain the data frame from the baseline model
   # Note, use super assignment to modify .df in the global environment
@@ -492,7 +492,7 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="numeric"){
 #' simplify_asr <- simplify_ec_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
 #' simplify_asr$call
 #' @export
-simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="numeric"){
+simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
 
   # Identify the data frame from the model
   .df <<- base::eval(.fm$call$data)

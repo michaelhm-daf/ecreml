@@ -506,9 +506,10 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
       # First define the model with every EC term for the candidate EC
       candid_fm <- ec_full_model_constructor(.fm=curr_fm, .ec=ec_candidate, .G=G, .M=M, .kn=6)
 
-      ec_candidate <- rlang::parse_quos(ec_candid, rlang::current_env())
+      #ecs_in_candidate <- rlang::parse_quos(ec_candid, rlang::current_env())
+      ecs_in_candidate <- rlang::parse_quos(c(ec_bl_terms_char, ec_candid), rlang::current_env())
       # Remove non-significant fixed and random effects for the ECs in the candidate model
-      candid_fm <- simplify_ec_model(.fm=candid_fm, .ecs_in_model = ec_candidate, .G=rlang::expr_text(G),
+      candid_fm <- simplify_ec_model(.fm=candid_fm, .ecs_in_model = ecs_in_candidate, .G=rlang::expr_text(G),
                                      .M=rlang::expr_text(M), denDF=denDF)
 
       ec_candidate_bl <- rlang::parse_quos(c(ec_bl_terms_char, ec_candid), rlang::current_env())
