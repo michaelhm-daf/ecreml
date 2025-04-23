@@ -1,14 +1,14 @@
 Package: ecreml
-Title: Incorporates ECs into the analysis of agriculturial trial data containing GxExM interactions
-Version: 0.0.01
+Title: Incorporates ECs into the analysis of agricultural trial data containing GxExM interactions
+Version: 0.0.002
 Authors@R: 
     person("Michael", "Mumford", , "Michael.Mumford@daf.qld.gov.au", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-5037-8680"))
-Description: This R-package complements the statistcal methodology outlined in Mumford et al. (2023) 
+Description: This R-package complements the statistical methodology outlined in Mumford et al. (2023) 
 	that enables environmental covariates (ECs) to be incorporated into the multi-environment trial (MET) analysis
 	of agricultural consisting of Genotype x Environment x Management (GxExM) interaction effects. Specifically, 
 	this R-package contains a suite of functions that automate the process of identifying key ECs contributing to the
-	GxExM interaction after a baseline model is fitted using the asreml R-package tat does not contain any EC information.
+	GxExM interaction after a baseline model is fitted using the ASReml R-package tat does not contain any EC information.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -39,3 +39,4 @@ BugReports: https://github.com/michaelhm-daf/ecreml/issues
 LazyData: true
 Depends: 
     R (>= 2.10)
+Config/testthat/edition: 3

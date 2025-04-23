@@ -147,8 +147,7 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
 # algorithm
 #Start with the most complex term (set to i)
 # If current margin value is the same, Assess whether every preceding term is nested within it,
-# If there is a term which is nested within i
-# Repeat for for all i in reverse until i=2
+# If there is a term which is nested within im repeat for for all i in reverse until i=2
 # At the end subtract min(margin_value) from all terms so that the starting value is 1
 
 # A function to determine which terms are nested within other terms
@@ -315,8 +314,15 @@ dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M){
     # Define a logical variable indicating if each term can be dropped
     new_wald_df$canDrop <- !(new_wald_df$pres_spl_ec | new_wald_df$pres_M_ec)
   } else {
+    # Define a spline equivalent with a spl(density) term
+    new_wald_df$spl_equiv_m <- stringr::str_replace_all(rownames(wald_df), .M,
+                                  paste0('spl(',.M,')') )
+    # For each EC, check if the equivalent spline term is in the current model w.r.t spl(EC) & spl(M)
+    new_wald_df$pres_spl_m <- new_wald_df$spl_equiv_m%in%randomTerms
+
     # Define a logical variable indicating if each term can be dropped
-    new_wald_df$canDrop <- !(new_wald_df$pres_spl_ec)
+    # Note that it can only be dropped if both spl(.M) and spl(ec) are NOT in the current model
+    new_wald_df$canDrop <- !(new_wald_df$pres_spl_ec | new_wald_df$pres_spl_m)
   }
   return(new_wald_df)
 }

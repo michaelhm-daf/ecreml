@@ -112,6 +112,7 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 
   # ADD AN ERROR MESSAGE IF AT() HAS LEVELS NUMBERED INSTEAD OF STATED!!!!!!!!!!!!!!!!!!!!!!!!
 
+
   # Set each of the inputs as expressions so that the user does not have to make them as expressions prior to input
   # .ec <- enexpr(.ec)
   # .G <- enexpr(.G)

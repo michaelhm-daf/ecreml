@@ -1,7 +1,7 @@
 
 # Algorithm to obtain final random model
 # Run most complex model
-# Use while loop with a logical value that determine whether to continue or not with the algorithm
+# Use while loop with a logical value that determines whether to continue or not with the algorithm
 # If terms in highest margin value are boundary, then drop them from the model and re-run without them
 # If the terms in the highest margin value are still non-boundary, set k = total non-boundary max margin terms
 # For each k, perform AIC test, if non significant, drop the term and re-run for other k
@@ -114,6 +114,10 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
   for(i in 1:length(ec_terms_char)){
     # Perform a grep for each EC to subset the terms
     which_ith_ec_terms <- grep(ec_terms_char[i], ec_terms_df$Term)
+    # If there are no random effects in the model for the current EC, move on to the next EC
+    if(length(which_ith_ec_terms)==0){
+      next
+    }
     temp_ec_terms_df <- (ec_terms_df[ which_ith_ec_terms, ])
 
 
@@ -148,7 +152,7 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
           # If remove_terms is empty, then define remove_terms
           if(rlang::is_missing(removed_terms)){
             removed_terms <- as.character(term_to_test) #parse_expr(expr_text(term_to_test))
-          } else {
+          }else {
             # removed_terms <- parse_expr( paste(expr(!!term_to_test),
             #                                  expr_text(removed_terms), # Note that removed_terms is already an expression, whilst term_to_test is a character
             #                                  sep=" + "))
@@ -213,7 +217,7 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
 
           #Calculate the AIC value for the model being considered
           AIC_test <- lmmtools::icREML(list(test_fm))$AIC
-          # If the AIC of the test model is better, then set all the current model object to the test object
+          # If the AIC of the test model is better (i.e. lower), then set all the current model object to the test object
           if(AIC_test <= AIC_curr){
             curr_call <- test_call
             curr_fm <- test_fm
@@ -381,7 +385,7 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
   #wald_curr_df$Margin <- factor(wald_curr_df$Margin) %>% as.integer()
 
   # Identify if the corresponding spline term is in the model for each EC
-  wald_curr_df <- dropFixedTerm(.fm, wald_df = wald_init_df, quo_ecs_in_model,
+  wald_curr_df <- dropFixedTerm(.fm, wald_df = wald_init_df, .ecs_in_model= quo_ecs_in_model,
                                 .M)#, randomTerms=random_terms_curr)
 
   # Do a for loop for each EC to drop terms from the model
