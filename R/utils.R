@@ -1,11 +1,11 @@
 #' @title Convert an expression into an asreml call term
 #' @description
 #' A function to converts an expression into the appropriate term to go into an asreml call
-#' @param expr An expression
+#'@param expr An expression
 #'
-#' @return A character vector
+#'@return A character vector
+#'@noRd
 #'
-
 expr_to_terms <- function(expr) {
   expr_char <- rlang::expr_text(expr)
 
@@ -51,6 +51,7 @@ expr_to_terms <- function(expr) {
 #' @param response A logical determining whether the response variable is included in main_expr. Default is FALSE.
 #'
 #' @return An expression to be included in an asreml call.
+#' @noRd
 #'
 
 # Write a function to subtract one expression from another larger expression
@@ -164,7 +165,7 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
 #' @param df A data frame containing the data used in the multi-environment trial analysis
 #'
 #' @return A vector of type double indicating the hierarchical structure of the random terms in the model for a particular environmental covariate
-#'
+#' @noRd
 
 margin <- function(terms, ec, G, M, df){
   if (is.na(ec) || ec == "") {
@@ -291,7 +292,7 @@ margin <- function(terms, ec, G, M, df){
 #' @param randomTerms Check if this is still needed in the model
 #'
 #' @return An updated Wald table with an additional column of type logical indicating whether each fixed effect term in the model can be dropped.
-#'
+#' @noRd
 dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M){
   randomTerms <- attr(.fm$formulae$random, "term.labels") %>%
     stringr::str_replace_all(" ", "") %>%  #remove all spaces to stop any unexpected bugs from occurring
@@ -338,7 +339,7 @@ dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M){
 #' Use "\code{incremental}" for Type 1 sums of squares. See  \code{asreml::wald.asreml} for more information.
 #'
 #' @return An asreml model object with a new fixed effets model.
-#'
+#' @noRd
 update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", ssType="conditional"){
 
   .df <<- base::eval(.fm$call$data)
@@ -432,7 +433,6 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", 
 #'   maxit=30, workspace="1Gb")
 #' postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
 #' postPAW_full_asr$call
-#'
 #' @export
 ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=6){
 
@@ -516,7 +516,7 @@ ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=6){
 #' @param .M An expression indicating which term in the model is the management practice component.
 #' @param baseline_ec_cols  A vector of integers indicating which columns in both \code{.df} and \code{subset_df} contain
 #' environmental covariates that are in the current model
-#'
+#' @noRd
 #' @return A list of information required for asreml.predict with continuous variables (TBC!)
 #' @export
 parallel_predict_list <- function(.df, subset_df, .ec=NULL, .G, .E, .M, baseline_ec_cols=NULL ){
@@ -721,15 +721,5 @@ parallel_predict_list <- function(.df, subset_df, .ec=NULL, .G, .E, .M, baseline
   return(list(levels_list=levels_list, aux_parallel=aux_parallel, classify_terms=classify_terms))
 }
 
-
-
-# if denDF is too difficult to calculate, automatically make it 30
-wald_approx_pvalue <- function(aov_df){
-  # Set the denDF tp be 30 for all terms as a large sample approximation
-  aov_df$denDF[is.na(aov_df$denDF)] <- 30
-  # Calculate p-values based on large same denDF
-  aov_df$Fprob <- 1-pf(q=aov_df$Fcon, df1=aov_df$df, df2=aov_df$denDF)
-  return(aov_df)
-}
 
 

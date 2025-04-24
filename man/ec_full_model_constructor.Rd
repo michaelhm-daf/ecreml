@@ -43,5 +43,4 @@ baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
   maxit=30, workspace="1Gb")
 postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
 postPAW_full_asr$call
-
 }
