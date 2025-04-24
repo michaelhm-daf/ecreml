@@ -94,12 +94,12 @@ cv_groups <- function(E, folds=6) {
 #'   data = SorghumYield,
 #'   na.action=na.method(x='include'),
 #'   maxit=30, workspace="1Gb")
-#'  ec_rmse_summary <- ec_cv_full(.fm=baseline_asr, .ec=rlang::expr(PrePAW), .G =rlang::expr(Genotype), .E = rlang::expr(Env),
+#'  ec_rmse_summary <- ec_single(.fm=baseline_asr, .ec=rlang::expr(PrePAW), .G =rlang::expr(Genotype), .E = rlang::expr(Env),
 #'                    .M = rlang::expr(density), .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
 #'  ec_rmse_summary$Rmse
 #'
 #' @export
-ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
+ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                        .cores=2, .kn=6, .ecs_in_bline_model=rlang::quos(NULL), aliased=FALSE){
   # Obtain the data frame from the baseline model
   .df  <- base::eval(.fm$call$data)
@@ -143,7 +143,7 @@ ec_cv_full <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
     E_char <- unique(.df[[.E]]) %>% as.character()
     # Now run ec cross-validation function
     .env_cv_df <- cv_groups(E=E_char)
-    # Define the column heading for E to be same as it is in the input into ec_cv_full
+    # Define the column heading for E to be same as it is in the input into ec_single
     .env_cv_df[[.E]] <- .env_cv_df$E
   }
   # If there is no column heading with the same name as E in the original data-frame, then create one
@@ -589,10 +589,10 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
 
   for(i in 1:dim(ec_df)[1]){
     ec_curr <- rlang::parse_expr(ec_df$EC[i])
-    # ec_cv_temp <- ec_cv_full(fm=YieldInit.fm, ec=ec_curr, G= expr(Hybrid), E = expr(Env),
+    # ec_cv_temp <- ec_single(fm=YieldInit.fm, ec=ec_curr, G= expr(Hybrid), E = expr(Env),
     #            M = expr(density), trial=expr(Trial), env_cv_df=sorghum_env_cv_df,
     #            cores = 6, kn=6)
-    ec_cv_temp <- ec_cv_full(.fm=fm, .ec=ec_curr, .G= G, .E = E,
+    ec_cv_temp <- ec_single(.fm=fm, .ec=ec_curr, .G= G, .E = E,
                              .M = M, .trial=trial, .env_cv_df = env_cv_df,
                              .cores=cores, .kn=kn,
                              .ecs_in_bline_model=quo_ecs_bl)

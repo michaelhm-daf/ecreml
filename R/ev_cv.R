@@ -89,7 +89,7 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
     E_char <- unique(.df[[.E]]) %>% as.character()
     # Now run ec cross-validation function
     .env_cv_df <- cv_groups(E=E_char)
-    # Define the column heading for E to be same as it is in the input into ec_cv_full
+    # Define the column heading for E to be same as it is in the input into ec_single
     .env_cv_df[[.E]] <- .env_cv_df$E
   }
   # If there is no column heading with the same name as E in the original data-frame, then create one
