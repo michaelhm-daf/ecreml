@@ -22,6 +22,7 @@ Options include \code{none}, \code{algebraic} or \code{numeric}.}
 An updated asreml model such that all non-significant environmental covariate terms have been removed from the model.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 Performs the backwards selection procedure for all environmental covariates in the current model.
 This is achieved by cycling between dropping fixed and random environmental covariate terms until all non-significant environmental
 covariate terms have been dropped from the current model.

@@ -58,6 +58,7 @@ The predictions are obtained internally using \code{asreml::predict.asreml}.
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 This function includes an environment covariate (EC) into the model and then performs k-fold cross validation to obtain predictions
 from both the baseline model and the model with an environmental covariate included.
 If management practice \code{.M} and the environment covariates \code{.ec} are factors, then the predictions will be for each unique combination of \code{GxExM}.

@@ -56,6 +56,7 @@ fixed and random effect terms pertaining to each environmental covariate identif
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 This function combines all of the component functions required to complete the environment covariate selection algorithm for a given baseline model.
 The final output is an updated model containing each of the important ECs identified by the algorithm, along with the corresponding
 environmental covariate terms that are statistically significant.

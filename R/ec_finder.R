@@ -3,6 +3,7 @@
 # Input E is a character vector of all unique environments
 #' @title Defines environment groups for k-fold cross validation
 #' @description
+#' `r lifecycle::badge("experimental")`
 #' Generates the cross validation groups for each environment to go into. These groups are then used for the environmental covariate selection procedure.
 #'
 #' @param E A character vector of environments included in the multi-environment trial data
@@ -73,6 +74,7 @@ cv_groups <- function(E, folds = 6) {
 
 #' @title Include an EC into the model and obtain the RMSE
 #' @description
+#' `r lifecycle::badge("experimental")`
 #' This function includes an environment covariate (EC) into the model and then performs k-fold cross validation to obtain predictions
 #' from both the baseline model and the model with an environmental covariate included.
 #' If management practice \code{.M} and the environment covariates \code{.ec} are factors, then the predictions will be for each unique combination of \code{GxExM}.
@@ -647,6 +649,7 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 
 #' @title Include multiple ECs into the model one at a time
 #' @description
+#' `r lifecycle::badge("experimental")`
 #' This function implements the forward selection procedure for each environmental covariates (EC).
 #' Each EC is incorporate into the model individually and then k-fold cross validation is performed.
 #' Predcitions are then obtained in an untested environment, which are then compared back to the baseline model to obtain an RMSE for each environment.

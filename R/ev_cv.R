@@ -1,7 +1,8 @@
 #' @title Calculate the RMSE for a given model
 #' @description
+#' `r lifecycle::badge("experimental")`
 #' This function calculates the RMSE for the current model by implementing the k-fold cross validation and then calculating the
-#'  predictions obtained in an untested environment.
+#' predictions obtained in an untested environment.
 #'
 #' @param .fm The baseline \code{asreml} model object that environmental covariates will be added to.
 #' Note that the data frame used in the baseline model will be the dataframe used to identify each of the corresponding terms in the model.
@@ -445,6 +446,7 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 
 #' @title Select the best EC and the significant terms
 #' @description
+#' `r lifecycle::badge("experimental")`
 #' This function bring together the entire subset selection process to (i) identify the most important environmental covariate
 #' via the forward selection procedure and then drop the non-significant fixed and random terms from the model to achieve a parsimonious model.
 #'
@@ -720,6 +722,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 
 #' @title Include all important ECs into the model
 #' @description
+#' `r lifecycle::badge("experimental")`
 #' This function combines all of the component functions required to complete the environment covariate selection algorithm for a given baseline model.
 #' The final output is an updated model containing each of the important ECs identified by the algorithm, along with the corresponding
 #' environmental covariate terms that are statistically significant.

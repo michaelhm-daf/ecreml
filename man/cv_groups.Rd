@@ -15,6 +15,7 @@ cv_groups(E, folds = 6)
 A data frame with 2 columns. The first column is the environment term. The 2nd column is the cross validation group that each environment hsa been randomly allocated to.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 Generates the cross validation groups for each environment to go into. These groups are then used for the environmental covariate selection procedure.
 }
 \examples{

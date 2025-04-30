@@ -53,6 +53,7 @@ The predictions are obtained internally using \code{asreml::predict.asreml}.
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 This function implements the forward selection procedure for each environmental covariates (EC).
 Each EC is incorporate into the model individually and then k-fold cross validation is performed.
 Predcitions are then obtained in an untested environment, which are then compared back to the baseline model to obtain an RMSE for each environment.

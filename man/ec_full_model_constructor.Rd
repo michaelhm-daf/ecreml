@@ -21,6 +21,7 @@ ec_full_model_constructor(.fm, .ec, .G, .M, .kn = 6)
 An asreml model object with all of the fixed and random terms related to the environmental covariate \code{.ec} being added to the model.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 Runs an updated asreml model with the additional fixed and random effects term for the environmental covariate added to the model.
 }
 \examples{

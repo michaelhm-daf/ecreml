@@ -19,6 +19,7 @@ ec_random_model(.fm, .ecs_in_model, .G, .M)
 An updated asreml model such that the continuous non-significant environmental covariate spline and management terms have been removed from the model.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 Performs the backwards selection procedure for the random component of the model to obtain a parsimonious random effects model
 for the all environmental covariates currently in the model.
 Testing for the significance of random effect terms is performed using the AIC criteria at the REML parameter estimates (Verbyla 2019).

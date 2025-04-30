@@ -577,6 +577,7 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", 
 
 #' @title Creates an updated model which is the same as the current model but adds one new EC into the model
 #' @description
+#' `r lifecycle::badge("experimental")`
 #' Runs an updated asreml model with the additional fixed and random effects term for the environmental covariate added to the model.
 #'
 #' @param .fm An \code{asreml} model object without the environmental covariate in the model.

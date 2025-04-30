@@ -22,6 +22,7 @@ Options include \code{none}, \code{algebraic} or \code{numeric}.}
 An updated asreml model such that the non-significant environmental covariate fixed effect terms have been removed from the model.
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 Performs the backwards selection procedure for the fixed component of the model to obtain a parsimonious fixed effects model,
 removing all non-significant environmental covariate terms.
 Testing for the significance of fixed effect terms is performed using Wald tests with an approximate F-statistic (Kenward & Roger 1997).

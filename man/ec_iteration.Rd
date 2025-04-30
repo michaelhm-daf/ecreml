@@ -56,6 +56,7 @@ fixed and random effects pertaining to the environmental covariate identified.
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 This function bring together the entire subset selection process to (i) identify the most important environmental covariate
 via the forward selection procedure and then drop the non-significant fixed and random terms from the model to achieve a parsimonious model.
 }

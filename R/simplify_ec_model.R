@@ -11,6 +11,7 @@
 
 #' @title Identify the most parsimonious EC random effects model
 #' @description
+#' `r lifecycle::badge("experimental")`
 #' Performs the backwards selection procedure for the random component of the model to obtain a parsimonious random effects model
 #' for the all environmental covariates currently in the model.
 #' Testing for the significance of random effect terms is performed using the AIC criteria at the REML parameter estimates (Verbyla 2019).
@@ -349,6 +350,7 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
 
 #' @title Identify the most parsimonious EC fixed effects model
 #' @description
+#' `r lifecycle::badge("experimental")`
 #' Performs the backwards selection procedure for the fixed component of the model to obtain a parsimonious fixed effects model,
 #' removing all non-significant environmental covariate terms.
 #' Testing for the significance of fixed effect terms is performed using Wald tests with an approximate F-statistic (Kenward & Roger 1997).
@@ -607,6 +609,7 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
 
 #' @title Identify the most parsimonious EC model
 #' @description
+#' `r lifecycle::badge("experimental")`
 #' Performs the backwards selection procedure for all environmental covariates in the current model.
 #' This is achieved by cycling between dropping fixed and random environmental covariate terms until all non-significant environmental
 #' covariate terms have been dropped from the current model.

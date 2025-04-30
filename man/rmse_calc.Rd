@@ -51,6 +51,7 @@ The predictions are obtained internally using \code{asreml::predict.asreml}.
 }
 }
 \description{
+\ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 This function calculates the RMSE for the current model by implementing the k-fold cross validation and then calculating the
 predictions obtained in an untested environment.
 }
