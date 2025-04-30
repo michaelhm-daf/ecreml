@@ -47,8 +47,66 @@
 #' @export
 ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
 
+  # Error handling for input arguments
+
+  # Check if .fm is provided and is a valid asreml model object
+  if (missing(.fm) || is.null(.fm)) {
+    stop("Error: The argument '.fm' (current model) must be provided and cannot be NULL.")
+  }
+  if (!inherits(.fm, "asreml")) {
+    stop("Error: The argument '.fm' must be a valid asreml model object.")
+  }
+
+  # Check if .ecs_in_model is provided and is a list of expressions
+  if (missing(.ecs_in_model) || is.null(.ecs_in_model)) {
+    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_quosures(.ecs_in_model)) {
+    stop("Error: The argument '.ecs_in_model' must be a list of expressions (quosures).")
+  }
+
+  # Check if .G is provided and is a character
+  if (missing(.G) || is.null(.G)) {
+    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
+  }
+  if (!is.character(.G) || length(.G) != 1) {
+    stop("Error: The argument '.G' must be a single character string.")
+  }
+
+  # Check if .M is provided and is a character
+  if (missing(.M) || is.null(.M)) {
+    stop("Error: The argument '.M' (management practice term) must be provided and cannot be NULL.")
+  }
+  if (!is.character(.M) || length(.M) != 1) {
+    stop("Error: The argument '.M' must be a single character string.")
+  }
+
+
   # Obtain the data frame from the baseline model
   .df  <<- base::eval(.fm$call$data)
+
+
+
+  # Check if the data frame is valid
+  if (is.null(.df) || !is.data.frame(.df)) {
+    stop("Error: The data frame used in the model could not be retrieved or is not valid.")
+  }
+
+  # Check if the columns corresponding to .ecs_in_model exist in the data frame
+  vars <- as.list(magrittr::set_names(seq_along(.df), names(.df)))
+  cols_ecs <- unlist(purrr::map(.ecs_in_model, rlang::eval_tidy, vars))
+  if (any(is.na(cols_ecs))) {
+    stop("Error: One or more environmental covariates in '.ecs_in_model' do not exist in the data frame used in the model.")
+  }
+
+  # Check if the random effects terms corresponding to the ECs exist in the model
+  ec_terms_char <- colnames(.df[cols_ecs])
+  ec_terms_for_grep <- paste0("spl.*(", paste(ec_terms_char, collapse = "|"), ")")
+  which_random_ec_terms <- grep(ec_terms_for_grep, names(.fm$noeff))
+  # if (length(which_random_ec_terms) == 0) {
+  #   stop("Error: No random effect terms corresponding to the environmental covariates were found in the model.")
+  # }
+
 
   # Identify each of the EC terms and place into a character vector
   #quo_ecs_in_model <- enquos(.ecs_in_model)
@@ -74,10 +132,10 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
 
   # Place the EC terms into a data frame
   ec_terms_df <- data.frame(Term=random_ec_terms)
-  # If there are no random effect terms in the model, then stop the function entirely
-  if(dim(ec_terms_df)[1]==0 ){
-    final_fm <- .fm
-    return(final_fm)
+  # If there are no random effect terms in the model, return the original model
+  if (nrow(ec_terms_df) == 0) {
+    warning("No random effect terms were found in the model. Returning the original model.")
+    return(.fm)
   }
 
   # Denote current model
@@ -118,14 +176,18 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
     if(length(which_ith_ec_terms)==0){
       next
     }
-    temp_ec_terms_df <- (ec_terms_df[ which_ith_ec_terms, ])
+    temp_ec_terms_df <- (ec_terms_df[which_ith_ec_terms, ])
 
 
     # Define the ith ec term separately because I am getting an error otherwise for some reason
     # Calculate the margin for each term
     # Need to define ec as a character to resolve error message for some reason
-    temp_ec_terms_df$Margin <- margin(terms=temp_ec_terms_df$Term,
-                                      ec=as.character(ec_terms_char[i]), G=.G, M=.M, df=.df)
+    tryCatch({
+      temp_ec_terms_df$Margin <- margin(terms = temp_ec_terms_df$Term,
+                                        ec = as.character(ec_terms_char[i]), G = .G, M = .M, df = .df)
+    }, error = function(e) {
+      stop("Error during margin calculation for random terms: ", e$message)
+    })
 
     # Create test version ec_terms data frame that keeps up with the last time asreml was run
     last_call_ec_terms_df <- temp_ec_terms_df
@@ -169,9 +231,13 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
           random_terms_curr <- curr_fm$call$random
 
           # Use self define function to remove random terms from the model for testing
-          random_terms_curr <- subtract_terms(main_expr = random_terms_curr,
-                                              removed_char_vec = removed_terms,
-                                              response=FALSE)
+          tryCatch({
+            random_terms_curr <- subtract_terms(main_expr = random_terms_curr,
+                                                removed_char_vec = removed_terms,
+                                                response = FALSE)
+          }, error = function(e) {
+            stop("Error during random terms subtraction: ", e$message)
+          })
 
           curr_call <- rlang::expr(asreml::asreml(fixed= !!fixed_terms_curr  ,
                                                   random =  !!random_terms_curr,
@@ -240,8 +306,12 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
         # If the number of rows in the 2nd version differs from the original, then re-run the loop
 
         # Update the values of Margin
-        temp_ec_terms_df$Margin <- margin(terms= temp_ec_terms_df$Term,
-                                          ec=as.character(ec_terms_char[i]), G=.G, M=.M, df=.df)
+        tryCatch({
+          temp_ec_terms_df$Margin <- margin(terms = temp_ec_terms_df$Term,
+                                            ec = as.character(ec_terms_char[i]), G = .G, M = .M, df = .df)
+        }, error = function(e) {
+          stop("Error during margin calculation for random terms: ", e$message)
+        })
         # Set j equal to new_j and continue testing for lower-order interaction terms
         j <- max(temp_ec_terms_df$Margin)
         # Set temp2 equal to temp 1
@@ -287,6 +357,8 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
 #' @param .ecs_in_model A list of expressions such that each expression is an environmental covariate that is present in the current model.
 #' @param .G The genotype term in the model as a character
 #' @param .M The management practice term in the model a character
+#' @param denDF A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
+#' Options include \code{none}, \code{algebraic} or \code{numeric}.
 #'
 #' @return An updated asreml model such that the non-significant environmental covariate fixed effect terms have been removed from the model.
 #'
@@ -316,9 +388,69 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
 #' @export
 ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
 
+  # Error handling for input arguments
+
+  # Check if .fm is provided and is a valid asreml model object
+  if (missing(.fm) || is.null(.fm)) {
+    stop("Error: The argument '.fm' (current model) must be provided and cannot be NULL.")
+  }
+  if (!inherits(.fm, "asreml")) {
+    stop("Error: The argument '.fm' must be a valid asreml model object.")
+  }
+
+  # Check if .ecs_in_model is provided and is a list of expressions
+  if (missing(.ecs_in_model) || is.null(.ecs_in_model)) {
+    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_quosures(.ecs_in_model)) {
+    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be a list of expressions (quosures).")
+  }
+
+  # Check if .G is provided and is a character
+  if (missing(.G) || is.null(.G)) {
+    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
+  }
+  if (!is.character(.G) || length(.G) != 1) {
+    stop("Error: The argument '.G' (genotype term) must be a single character string.")
+  }
+
+  # Check if .M is provided and is a character
+  if (missing(.M) || is.null(.M)) {
+    stop("Error: The argument '.M' (management practice term) must be provided and cannot be NULL.")
+  }
+  if (!is.character(.M) || length(.M) != 1) {
+    stop("Error: The argument '.M' (management practice term) must be a single character string.")
+  }
+
+  # Check if denDF is a valid value
+  if (!is.character(denDF) || !(denDF %in% c("none", "numeric", "algebraic"))) {
+    stop("Error: The argument 'denDF' (denominator degrees of freedom) must be one of 'none', 'numeric', or 'algebraic'.")
+  }
+
+
   # Obtain the data frame from the baseline model
   # Note, use super assignment to modify .df in the global environment
   .df  <<- base::eval(.fm$call$data)
+
+  # Check if the data frame is valid
+  if (is.null(.df) || !is.data.frame(.df)) {
+    stop("Error: The data frame used in the model could not be retrieved or is not valid.")
+  }
+
+  # Check if the columns corresponding to .ecs_in_model exist in the data frame
+  vars <- as.list(magrittr::set_names(seq_along(.df), names(.df)))
+  cols_ecs <- unlist(purrr::map(.ecs_in_model, rlang::eval_tidy, vars))
+  if (any(is.na(cols_ecs))) {
+    stop("Error: One or more environmental covariates in '.ecs_in_model' do not exist in the data frame used in the model.")
+  }
+
+  # Check if the fixed effects terms corresponding to the ECs exist in the model
+  ec_terms_char <- colnames(.df[cols_ecs])
+  ec_terms_for_grep <- paste(ec_terms_char, collapse = "|")
+  which_fixed_ec_terms <- grep(ec_terms_for_grep, attr(.fm$formulae$fixed, "term.labels"))
+  if (length(which_fixed_ec_terms) == 0) {
+    stop("Error: No fixed effect terms corresponding to the environmental covariates were found in the model.")
+  }
 
   # Identify each of the EC terms and place into a character vector
   #quo_ecs_in_model <- enquos(.ecs_in_model)
@@ -342,7 +474,12 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
   which_fixed_ec_terms <- grep(ec_terms_for_grep, attr(.fm$formulae$fixed, "term.labels") )
   fixed_ec_terms <-  attr(.fm$formulae$fixed, "term.labels")[which_fixed_ec_terms]
 
-  .fm <- update_fixed_asr(.fm=.fm, denDF=denDF)
+  #.fm <- update_fixed_asr(.fm=.fm, denDF=denDF)
+  tryCatch({
+    .fm <- update_fixed_asr(.fm = .fm, denDF = denDF)
+  }, error = function(e) {
+    stop("Error during initial update of fixed effects model when exploring whether fixed effect EC terms can be dropped from the model: ", e$message)
+  })
 
   # Denote current model
   wald_init_df <- as.data.frame(.fm$aov)
@@ -350,6 +487,7 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
   # If denominator df cannot be calculated by asreml, use wald test instead
   if( (denDF!="none") & (length(is.na(wald_init_df$denDF)) > 0) ){
     #wald_init_df <- wald_approx_pvalue(wald_init_df)
+    warning("Denominator degrees of freedom could not be calculated. Falling back to Wald statistic.")
     denDF <- "none"
     .fm <- update_fixed_asr(.fm=.fm, denDF=denDF)
   }
@@ -385,8 +523,11 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
   #wald_curr_df$Margin <- factor(wald_curr_df$Margin) %>% as.integer()
 
   # Identify if the corresponding spline term is in the model for each EC
-  wald_curr_df <- dropFixedTerm(.fm, wald_df = wald_init_df, .ecs_in_model= quo_ecs_in_model,
-                                .M)#, randomTerms=random_terms_curr)
+  tryCatch({
+    wald_curr_df <- dropFixedTerm(.fm = .fm, wald_df = wald_init_df, .ecs_in_model = quo_ecs_in_model, .M = .M)
+  }, error = function(e) {
+    stop("Error when dropping a fixed term for the current model: ", e$message)
+  })
 
   # Do a for loop for each EC to drop terms from the model
   # Set j equal to the current max value of margin
@@ -433,7 +574,11 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
       #                                         wald=list(denDF="numeric",
       #                                           ssType="conditional")))
 
-      .fm <- update_fixed_asr(.fm=.fm, term=removed_terms, denDF=denDF)
+      tryCatch({
+        .fm <- update_fixed_asr(.fm = .fm, term = removed_terms, denDF = denDF)
+      }, error = function(e) {
+        stop("Error during fixed effects model update: ", e$message)
+      })
 
       #.fm <- eval(curr_call)
       wald_curr_df <- as.data.frame(.fm$aov)
@@ -462,14 +607,16 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
 
 #' @title Identify the most parsimonious EC model
 #' @description
-#' Performs the backwards selection procedure for all environmental covariates in the curent model.
-#' This is achieve by cyclcing between dropping fixed and random environmental covariate terms until all non-significant environmental
+#' Performs the backwards selection procedure for all environmental covariates in the current model.
+#' This is achieved by cycling between dropping fixed and random environmental covariate terms until all non-significant environmental
 #' covariate terms have been dropped from the current model.
 #'
 #' @param .fm The current \code{asreml} model object that the environmental covariate terms will be tested from.
 #' @param .ecs_in_model A list of expressions such that each expression is an environmental covariate that is present in the current model.
 #' @param .G The genotype term in the model as a character
 #' @param .M The management practice term in the model a character
+#' @param denDF A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
+#' Options include \code{none}, \code{algebraic} or \code{numeric}.
 #'
 #' @return An updated asreml model such that all non-significant environmental covariate terms have been removed from the model.
 #'
@@ -498,16 +645,84 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
 #' @export
 simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
 
+
+  # Error handling for input arguments
+
+  # Check if .fm is provided and is a valid asreml model object
+  if (missing(.fm) || is.null(.fm)) {
+    stop("Error: The argument '.fm' (current model) must be provided and cannot be NULL.")
+  }
+  if (!inherits(.fm, "asreml")) {
+    stop("Error: The argument '.fm' must be a valid asreml model object.")
+  }
+
+  # Check if .ecs_in_model is provided and is a list of expressions
+  if (missing(.ecs_in_model) || is.null(.ecs_in_model)) {
+    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_quosures(.ecs_in_model)) {
+    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be a list of expressions (quosures).")
+  }
+
+  # Check if .G is provided and is a character
+  if (missing(.G) || is.null(.G)) {
+    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
+  }
+  if (!is.character(.G) || length(.G) != 1) {
+    stop("Error: The argument '.G' (genotype term) must be a single character string.")
+  }
+
+  # Check if .M is provided and is a character
+  if (missing(.M) || is.null(.M)) {
+    stop("Error: The argument '.M' (management practice term) must be provided and cannot be NULL.")
+  }
+  if (!is.character(.M) || length(.M) != 1) {
+    stop("Error: The argument '.M' (management practice term) must be a single character string.")
+  }
+
+  # Check if denDF is a valid value
+  if (!is.character(denDF) || !(denDF %in% c("none", "numeric", "algebraic"))) {
+    stop("Error: The argument 'denDF' (denominator degrees of freedom calculation) must be one of 'none', 'numeric', or 'algebraic'.")
+  }
+
+
   # Identify the data frame from the model
   .df <<- base::eval(.fm$call$data)
+
+
+  # Check if the data frame is valid
+  if (is.null(.df) || !is.data.frame(.df)) {
+    stop("Error: The data frame used in the model could not be retrieved or is not valid.")
+  }
+
+  # Check if the columns corresponding to .ecs_in_model exist in the data frame
+  vars <- as.list(magrittr::set_names(seq_along(.df), names(.df)))
+  cols_ecs <- unlist(purrr::map(.ecs_in_model, rlang::eval_tidy, vars))
+  if (any(is.na(cols_ecs))) {
+    stop("Error: One or more environmental covariates in '.ecs_in_model' do not exist in the data frame used in the model.")
+  }
+
 
   # Define the current model
   curr_fm <- .fm
   KeepSimplifying <- TRUE
   # Keep rotating between simplifying the fixed effects and the random effects until the model can be no longer simplified
   while(KeepSimplifying==TRUE){
-    new_random_fm <- ec_random_model(.fm=curr_fm, .ecs_in_model= .ecs_in_model, .G=.G, .M=.M)
-    new_fm <- ec_fixed_model(.fm=new_random_fm, .ecs_in_model= .ecs_in_model, .G=.G, .M=.M, denDF=denDF)
+    # Simplify the random effects
+    new_random_fm <- tryCatch(
+      ec_random_model(.fm = curr_fm, .ecs_in_model = .ecs_in_model, .G = .G, .M = .M),
+      error = function(e) {
+        stop("Error during random effects simplification: ", e$message)
+      }
+    )
+
+    # Simplify the fixed effects
+    new_fm <- tryCatch(
+      ec_fixed_model(.fm = new_random_fm, .ecs_in_model = .ecs_in_model, .G = .G, .M = .M, denDF = denDF),
+      error = function(e) {
+        stop("Error during fixed effects simplification: ", e$message)
+      }
+    )
     # If the fixed and random terms are exactly the same, then finish simplifying the model, otherwise keep running to try and simplify further
     if( (new_fm$call$fixed==curr_fm$call$fixed) ){ # && (new_fm$call$random==curr_fm$call$random)
       KeepSimplifying <- FALSE

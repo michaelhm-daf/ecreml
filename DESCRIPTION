@@ -19,17 +19,18 @@ Imports:
     dplyr (>= 1.1.2),
     foreach (>= 1.5.2),
     ggplot2 (>= 3.4.2),
+    lifecycle,
     lmmtools (>= 1.0.0),
     magrittr,
     Matrix (>= 1.5),
     openxlsx (>= 4.2.5.2),
-    parallel(>= 4.1.1),
+    parallel (>= 4.1.1),
     purrr (>= 1.0.1),
     rlang (>= 0.4.11),
     stats (>= 4.1.1),
     stringr (>= 1.5.0),
     tidyr (>= 1.3.0),
-    tidyverse (>= 2.0.0)  
+    tidyverse (>= 2.0.0)
 Suggests: 
     agridat (>= 1.2.1),
     roxygen2,

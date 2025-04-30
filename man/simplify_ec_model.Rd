@@ -14,13 +14,16 @@ simplify_ec_model(.fm, .ecs_in_model, .G, .M, denDF = "none")
 \item{.G}{The genotype term in the model as a character}
 
 \item{.M}{The management practice term in the model a character}
+
+\item{denDF}{A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
+Options include \code{none}, \code{algebraic} or \code{numeric}.}
 }
 \value{
 An updated asreml model such that all non-significant environmental covariate terms have been removed from the model.
 }
 \description{
-Performs the backwards selection procedure for all environmental covariates in the curent model.
-This is achieve by cyclcing between dropping fixed and random environmental covariate terms until all non-significant environmental
+Performs the backwards selection procedure for all environmental covariates in the current model.
+This is achieved by cycling between dropping fixed and random environmental covariate terms until all non-significant environmental
 covariate terms have been dropped from the current model.
 }
 \examples{

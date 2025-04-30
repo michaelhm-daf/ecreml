@@ -18,18 +18,48 @@
 #' cv_groups(unique_envs, folds=6)
 #'
 #' @export
-cv_groups <- function(E, folds=6) {
+cv_groups <- function(E, folds = 6) {
+  # Check if E is provided and is not NULL
+  if (missing(E) || is.null(E)) {
+    stop("Error: The argument 'E' must be provided and cannot be NULL.")
+  }
+
+  # Check if E is a valid input (e.g., a vector or data frame column)
+  if (!is.vector(E) && !is.factor(E)) {
+    stop("Error: The argument 'E' must be a vector or a factor.")
+  }
+
+  # Check if folds is a positive integer
+  if (!is.numeric(folds) || folds <= 0 || folds != as.integer(folds)) {
+    stop("Error: The argument 'folds' must be a positive integer.")
+  }
+
+  # Check if the number of folds is not greater than the number of elements in E
+  if (length(E) < folds) {
+    stop("Error: The number of folds cannot exceed the number of elements in 'E'.")
+  }
+
+  # Create the data frame
   env_cv_df <- data.frame(E = rlang::expr(!!E))
-  #env_cv_df[[E]] <- env_cv_df$E
+
+  # Check if the data frame was created successfully
+  if (nrow(env_cv_df) == 0) {
+    stop("Error: The input 'E' resulted in an empty data frame. Please check your input.")
+  }
+
   n <- nrow(env_cv_df)
+
   # Generate the initial clustering groups for each environment
-  env_cv_df$init_group <- rep(1:folds, times=ceiling(n/folds))[1:n]
+  env_cv_df$init_group <- rep(1:folds, times = ceiling(n / folds))[1:n]
+
   # Now randomly allocate environments to folds/groups
-  env_cv_df$sample <- sample(1:n, replace=F)
+  env_cv_df$sample <- sample(1:n, replace = FALSE)
   env_cv_df$cv_group <- env_cv_df$init_group[env_cv_df$sample]
+
   # Convert E and cv_group from character vectors to factors
   env_cv_df$E <- factor(env_cv_df$E)
   env_cv_df$cv_group <- factor(env_cv_df$cv_group)
+
   return(env_cv_df)
 }
 
@@ -101,6 +131,107 @@ cv_groups <- function(E, folds=6) {
 #' @export
 ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                        .cores=2, .kn=6, .ecs_in_bline_model=rlang::quos(NULL), aliased=FALSE){
+
+  # Error handling for input arguments
+
+  # Check if .fm is provided and is a valid asreml model object
+  if (missing(.fm) || is.null(.fm)) {
+    stop("Error: The argument '.fm' (baseline model) must be provided and cannot be NULL.")
+  }
+  if (!inherits(.fm, "asreml")) {
+    stop("Error: The argument '.fm' must be a valid asreml model object.")
+  }
+
+  # Check if .ec is provided and is an expression
+  if (missing(.ec) || is.null(.ec)) {
+    stop("Error: The argument '.ec' (environmental covariate) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(.ec)) {
+    stop("Error: The argument '.ec' must be a valid R expression.")
+  }
+
+  # Check if .G, .E, and .M are provided and are expressions
+  if (missing(.G) || is.null(.G)) {
+    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(.G)) {
+    stop("Error: The argument '.G' must be a valid R expression.")
+  }
+
+  if (missing(.E) || is.null(.E)) {
+    stop("Error: The argument '.E' (environment term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(.E)) {
+    stop("Error: The argument '.E' must be a valid R expression.")
+  }
+
+  if (!is.null(.M) && !rlang::is_expression(.M)) {
+    stop("Error: The argument '.M' (management practice term) must be a valid R expression if provided.")
+  }
+
+  # Check if .trial is an expression if provided
+  if (!is.null(.trial) && !rlang::is_expression(.trial)) {
+    stop("Error: The argument '.trial' must be a valid R expression if provided.")
+  }
+
+  # Check if .env_cv_df is a data frame if provided
+  if (!is.null(.env_cv_df) && !is.data.frame(.env_cv_df)) {
+    stop("Error: The argument '.env_cv_df' must be a data frame if provided.")
+  }
+
+  # Check if .cores is a positive integer
+  if (!is.numeric(.cores) || .cores <= 0 || .cores != as.integer(.cores)) {
+    stop("Error: The argument '.cores' must be a positive integer.")
+  }
+
+  # Check if .kn is a positive integer
+  if (!is.numeric(.kn) || .kn <= 0 || .kn != as.integer(.kn)) {
+    stop("Error: The argument '.kn' must be a positive integer.")
+  }
+
+  # Check if .ecs_in_bline_model is a list of quosures
+  if (!is.null(.ecs_in_bline_model) && !rlang::is_quosures(.ecs_in_bline_model)) {
+    stop("Error: The argument '.ecs_in_bline_model' must be a list of quosures if provided.")
+  }
+
+  # Check if aliased is a logical value
+  if (!is.logical(aliased)) {
+    stop("Error: The argument 'aliased' must be a logical value (TRUE or FALSE).")
+  }
+
+  # Obtain the data frame from the baseline model
+  .df <- base::eval(.fm$call$data)
+
+  # Check if the data frame is valid
+  if (is.null(.df) || !is.data.frame(.df)) {
+    stop("Error: The data frame used in the baseline model could not be retrieved or is not valid.")
+  }
+
+  # Round all continuous variables in the data frame to 4 decimal places
+  .df <- .df %>% purrr::modify_if(is.numeric, round, digits = 4)
+
+  # Remove cv_group from .df if it exists to prevent bugs
+  if ("cv_group" %in% colnames(.df)) {
+    .df <- .df %>% dplyr::select(!"cv_group") %>% as.data.frame()
+  }
+
+  # Check if .env_cv_df contains the environment term
+  if (!is.null(.env_cv_df) && is.null(.env_cv_df[[rlang::as_string(.E)]])) {
+    stop("Error: The environment term is missing from the provided environment grouping for cross-validation.")
+  }
+
+  # Ensure the number of cores does not exceed the number of cross-validation groups
+  if (!is.null(.env_cv_df) && .cores > length(unique(.env_cv_df$cv_group))) {
+    stop("Error: The number of cores cannot exceed the number of cross-validation groups.")
+  }
+
+  # Ensure the number of cores does not exceed the available system cores
+  total_cores <- parallel::detectCores()
+  if (.cores > total_cores) {
+    stop(paste("Error: The number of cores specified (", .cores, ") exceeds the available system cores (", total_cores, ").", sep = ""))
+  }
+
+
   # Obtain the data frame from the baseline model
   .df  <- base::eval(.fm$call$data)
   # Now also round all continuous variables in df to 4 decimal places to avoid errors later on due to merging of data frames
@@ -109,6 +240,7 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   if(length(which(colnames(.df)=="cv_group"))>0){
     .df <- .df %>%  dplyr::select(!"cv_group") %>% as.data.frame()
   }
+
 
   # ADD AN ERROR MESSAGE IF AT() HAS LEVELS NUMBERED INSTEAD OF STATED!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -139,13 +271,18 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   # First if statement to determine if environment groupings have been provided as an input
   # If not provided, then generate them randomly
   if(is.null(.env_cv_df)==TRUE){
-    # Generate ec_cv dataframe
-    E_char <- unique(.df[[.E]]) %>% as.character()
-    # Now run ec cross-validation function
-    .env_cv_df <- cv_groups(E=E_char)
-    # Define the column heading for E to be same as it is in the input into ec_single
-    .env_cv_df[[.E]] <- .env_cv_df$E
+    tryCatch({
+      # Generate ec_cv dataframe
+      E_char <- unique(.df[[.E]]) %>% as.character()
+      # Now run ec cross-validation function
+      .env_cv_df <- cv_groups(E = E_char)
+      # Define the column heading for E to be same as it is in the input into ec_single
+      .env_cv_df[[.E]] <- .env_cv_df$E
+    }, error = function(e) {
+      stop("Error during cross-validation group generation: ", e$message)
+    })
   }
+
   # If there is no column heading with the same name as E in the original data-frame, then create one
   # Show an error message describing so
   if(is.null(.env_cv_df[[.E]])==TRUE){
@@ -430,26 +567,36 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                                     }
                                   }
                                 # Run the asreml model
-                                subset_fm <- eval(subset_call)
+                                tryCatch({
+                                  subset_fm <- eval(subset_call)
+                                }, error = function(e) {
+                                  stop("Error during asreml model evaluation: ", e$message)
+                                })
 
                                 # Generate table of predictions
-                                predict_info <- parallel_predict_list(.df=.df, subset_df=subset_df, .ec=.ec, .G=.G, .E=.E,
-                                                                             .M=.M, baseline_ec_cols = baseline_ec_cols)
+                                tryCatch({
+                                  predict_info <- parallel_predict_list(.df = .df, subset_df = subset_df, .ec = .ec, .G = .G, .E = .E,
+                                                                        .M = .M, baseline_ec_cols = baseline_ec_cols)
+                                }, error = function(e) {
+                                  stop("Error during prediction list generation: ", e$message)
+                                })
 
                                 # Obtain predictions for all environments (tested & untested) for subsetted model
-                                if(length(predict_info$levels_list)>1){
-                                  subset_pred <- asreml::predict.asreml(object=subset_fm,
-                                                                        classify= predict_info$classify_terms,
-                                                                        levels=predict_info$levels_list,
-                                                                        aliased=aliased,
-                                                                        parallel=T, maxit=30, pworkspace="1gb")
-                                } else {
-                                  subset_pred <- asreml::predict.asreml(object=subset_fm,
-                                                                        classify= predict_info$classify_terms,
-                                                                        levels=predict_info$levels_list,
-                                                                        aliased=aliased,
-                                                                        parallel=F, maxit=1, pworkspace="1gb")
-                                }
+                                tryCatch({
+                                  if (length(predict_info$levels_list) > 1) {
+                                    subset_pred <- asreml::predict.asreml(object = subset_fm,
+                                                                          classify = predict_info$classify_terms,
+                                                                          levels = predict_info$levels_list,
+                                                                          parallel = TRUE, maxit = 1, pworkspace = "1gb")
+                                  } else {
+                                    subset_pred <- asreml::predict.asreml(object = subset_fm,
+                                                                          classify = predict_info$classify_terms,
+                                                                          levels = predict_info$levels_list,
+                                                                          parallel = FALSE, maxit = 1, pworkspace = "1gb")
+                                  }
+                                }, error = function(e) {
+                                  stop("Error obtaining cross-validation predictions using predict.asreml: ", e$message)
+                                })
                                 # Incorporate environment information into the table of predictions
                                 temp_subset.pred <- dplyr::left_join(subset_pred$pvals, predict_info$aux_parallel,
                                                                      by=colnames(predict_info$aux_parallel)[-1]) # Assumes the 1st column is always .E
@@ -560,6 +707,82 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
                       cores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::quos(NULL))
 {
+  # Error handling for input arguments
+
+  # Check if fm is provided and is a valid asreml model object
+  if (missing(fm) || is.null(fm)) {
+    stop("Error: The argument 'fm' (baseline model) must be provided and cannot be NULL.")
+  }
+  if (!inherits(fm, "asreml")) {
+    stop("Error: The argument 'fm' must be a valid asreml model object.")
+  }
+
+  # Check if ECs is provided and is a list of quosures
+  if (missing(ECs) || is.null(ECs)) {
+    stop("Error: The argument 'ECs' (environmental covariates) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_quosures(ECs)) {
+    stop("Error: The argument 'ECs' must be a list of quosures.")
+  }
+
+  # Check if G, E, and M are provided and are expressions
+  if (missing(G) || is.null(G)) {
+    stop("Error: The argument 'G' (genotype term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(G)) {
+    stop("Error: The argument 'G' must be a valid R expression.")
+  }
+
+  if (missing(E) || is.null(E)) {
+    stop("Error: The argument 'E' (environment term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(E)) {
+    stop("Error: The argument 'E' must be a valid R expression.")
+  }
+
+  if (missing(M) || is.null(M)) {
+    stop("Error: The argument 'M' (management practice term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(M)) {
+    stop("Error: The argument 'M' must be a valid R expression.")
+  }
+
+  # Check if trial is an expression if provided
+  if (!is.null(trial) && !rlang::is_expression(trial)) {
+    stop("Error: The argument 'trial' must be a valid R expression if provided.")
+  }
+
+  # Check if env_cv_df is a data frame if provided
+  if (!is.null(env_cv_df) && !is.data.frame(env_cv_df)) {
+    stop("Error: The argument 'env_cv_df' must be a data frame if provided.")
+  }
+
+  # Check if cores is a positive integer
+  if (!is.numeric(cores) || cores <= 0 || cores != as.integer(cores)) {
+    stop("Error: The argument 'cores' must be a positive integer.")
+  }
+
+  # Check if kn is a positive integer
+  if (!is.numeric(kn) || kn <= 0 || kn != as.integer(kn)) {
+    stop("Error: The argument 'kn' must be a positive integer.")
+  }
+
+  # Check if ecs_in_bline_model is a list of quosures
+  if (!is.null(ecs_in_bline_model) && !rlang::is_quosures(ecs_in_bline_model)) {
+    stop("Error: The argument 'ecs_in_bline_model' must be a list of quosures if provided.")
+  }
+
+  # Check if any environmental covariates in ECs are also in ecs_in_bline_model
+  if (!is.null(ecs_in_bline_model)) {
+    ecs_in_bline_model_names <- purrr::map_chr(ecs_in_bline_model, rlang::as_label)
+    ECs_names <- purrr::map_chr(ECs, rlang::as_label)
+    common_ecs <- base::intersect(ECs_names, ecs_in_bline_model_names)
+    if (length(common_ecs) > 0) {
+      stop(paste("Error: The following environmental covariates appear in both 'ECs' and 'ecs_in_bline_model':",
+                 paste(common_ecs, collapse = ", ")))
+    }
+  }
+
   df  <- base::eval(fm$call$data)
 
   # Turn all the relevant inputs into expressions (except for trial)
@@ -570,6 +793,31 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
   # if(is.null(ecs_in_bline_model)==FALSE){
   #   ecs_in_bline_model <- enexpr(ecs_in_bline_model)
   # }
+
+  # Check if the data frame is valid
+  if (is.null(df) || !is.data.frame(df)) {
+    stop("Error: The data frame used in the baseline model could not be retrieved or is not valid.")
+  }
+
+  # Check if the columns corresponding to ECs exist in the data frame
+  vars <- as.list(magrittr::set_names(seq_along(df), names(df)))
+  cols <- unlist(purrr::map(ECs, rlang::eval_tidy, vars))
+  if (any(is.na(cols))) {
+    stop("Error: One or more environmental covariates in 'ECs' do not exist in the data frame used in the baseline model.")
+  }
+
+  # Ensure the number of cores does not exceed the number of cross-validation groups
+  if (!is.null(env_cv_df) && cores > length(unique(env_cv_df$cv_group))) {
+    stop("Error: The number of cores cannot exceed the number of cross-validation groups.")
+  }
+
+  # Ensure the number of cores does not exceed the available system cores
+  total_cores <- parallel::detectCores()
+  if (cores > total_cores) {
+    stop(paste("Error: The number of cores specified (", cores, ") exceeds the available system cores (", total_cores, ").", sep = ""))
+  }
+
+
 
   # Don't need to if ECs are already a quosure
   quo_ecs <- ECs
@@ -592,10 +840,13 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
     # ec_cv_temp <- ec_single(fm=YieldInit.fm, ec=ec_curr, G= expr(Hybrid), E = expr(Env),
     #            M = expr(density), trial=expr(Trial), env_cv_df=sorghum_env_cv_df,
     #            cores = 6, kn=6)
-    ec_cv_temp <- ec_single(.fm=fm, .ec=ec_curr, .G= G, .E = E,
-                             .M = M, .trial=trial, .env_cv_df = env_cv_df,
-                             .cores=cores, .kn=kn,
-                             .ecs_in_bline_model=quo_ecs_bl)
+    tryCatch({
+      ec_cv_temp <- ec_single(.fm = fm, .ec = ec_curr, .G = G, .E = E,
+                              .M = M, .trial = trial, .env_cv_df = env_cv_df,
+                              .cores = cores, .kn = kn, .ecs_in_bline_model = quo_ecs_bl)
+    }, error = function(e) {
+      stop(paste("Error during cross-validation for environmental covariate '", ec_curr, "': ", e$message, sep = ""))
+    })
 
     # Store correlation and RMSE in EC data frame ec_df
     ec_df$Cor[i] <- ec_cv_temp$Cor

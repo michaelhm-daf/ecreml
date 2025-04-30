@@ -7,7 +7,23 @@
 #'@noRd
 #'
 expr_to_terms <- function(expr) {
+  # Error handling for input arguments
+
+  # Check if expr is provided and is a valid expression
+  if (missing(expr) || is.null(expr)) {
+    stop("Error: The argument 'expr' must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(expr)) {
+    stop("Error: The argument 'expr' must be a valid R expression.")
+  }
+
+  # Convert the expression to a character string
   expr_char <- rlang::expr_text(expr)
+
+  # Check if the expression is empty
+  if (nchar(expr_char) == 0) {
+    stop("Error: The provided expression is empty.")
+  }
 
   if(grepl(" + ",  expr_char)) {
     # If the expression string contains "+" operators, split terms by the "+"
@@ -56,7 +72,28 @@ expr_to_terms <- function(expr) {
 
 # Write a function to subtract one expression from another larger expression
 subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
-  # Convert the expressions to character vectors
+  # Error handling for input arguments
+
+  # Check if main_expr is provided and is a valid expression
+  if (missing(main_expr) || is.null(main_expr)) {
+    stop("Error: The argument 'main_expr' must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(main_expr)) {
+    stop("Error: The argument 'main_expr' must be a valid R expression.")
+  }
+
+  # Check if removed_char_vec is provided and is a character vector
+  if (missing(removed_char_vec) || is.null(removed_char_vec)) {
+    stop("Error: The argument 'removed_char_vec' must be provided and cannot be NULL.")
+  }
+  if (!is.character(removed_char_vec)) {
+    stop("Error: The argument 'removed_char_vec' must be a character vector.")
+  }
+
+  # Check if response is a logical value
+  if (!is.logical(response) || length(response) != 1) {
+    stop("Error: The argument 'response' must be a single logical value (TRUE or FALSE).")
+  }
 
   # convert expression to a character vector of length 1
   main_terms <- rlang::expr_text(main_expr) %>%
@@ -168,9 +205,67 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
 #' @noRd
 
 margin <- function(terms, ec, G, M, df){
-  if (is.na(ec) || ec == "") {
-    stop("The 'ec' parameter is NA or an empty character.")
+  # Error handling for input arguments
+
+  # Check if terms is provided and is a character vector
+  if (missing(terms) || is.null(terms)) {
+    stop("Error: The argument 'terms' must be provided and cannot be NULL.")
   }
+  if (!is.character(terms)) {
+    stop("Error: The argument 'terms' must be a character vector.")
+  }
+
+  # Check if ec is provided and is a valid character
+  if (missing(ec) || is.null(ec) || ec == "") {
+    stop("Error: The argument 'ec' must be provided and cannot be NULL or an empty string.")
+  }
+  if (!is.character(ec) || length(ec) != 1) {
+    stop("Error: The argument 'ec' must be a single character string.")
+  }
+
+  # Check if G is provided and is a valid character
+  if (missing(G) || is.null(G) || G == "") {
+    stop("Error: The argument 'G' must be provided and cannot be NULL or an empty string.")
+  }
+  if (!is.character(G) || length(G) != 1) {
+    stop("Error: The argument 'G' must be a single character string.")
+  }
+
+  # Check if M is provided and is a valid character (if not NULL)
+  if (!is.null(M) && (!is.character(M) || length(M) != 1)) {
+    stop("Error: The argument 'M' must be a single character string if provided.")
+  }
+
+  # Check if df is provided and is a valid data frame
+  if (missing(df) || is.null(df)) {
+    stop("Error: The argument 'df' must be provided and cannot be NULL.")
+  }
+  if (!is.data.frame(df)) {
+    stop("Error: The argument 'df' must be a valid data frame.")
+  }
+
+  # Check if ec exists in the data frame
+  if (!ec %in% colnames(df)) {
+    stop(paste("Error: The environmental covariate '", ec, "' does not exist in the data frame.", sep = ""))
+  }
+
+  # Check if M exists in the data frame (if not NULL)
+  if (!is.null(M) && !M %in% colnames(df)) {
+    stop(paste("Error: The management practice term '", M, "' does not exist in the data frame.", sep = ""))
+  }
+
+  if (is.na(ec) || ec == "") {
+    stop("Error: The 'ec' parameter is NA or an empty character.")
+  }
+
+  # # Check if .M exists in the random terms of the model
+  # randomTerms <- attr(.fm$formulae$random, "term.labels") %>%
+  #   stringr::str_replace_all(" ", "") %>%
+  #   stringr::str_replace_all(",k=\\d+", "")
+  # if (!any(grepl(.M, randomTerms))) {
+  #   stop(paste("Error: The management practice term '", .M, "' does not exist in the random terms of the model.", sep = ""))
+  # }
+
   #putting together index of letters and symbols
   letter_array <- c(toupper(letters))
   # Define marginality matrix based upon whether M is categorical or continuous
@@ -188,7 +283,7 @@ margin <- function(terms, ec, G, M, df){
       terms_matrix[2,] <- c(FALSE, TRUE)
       # Output error message if EC is not continuous
     } else {
-      stop("The environmental covariate must be numeric when management practice is missing")
+      stop("Error: The environmental covariate must be numeric when management practice is missing")
     }
 
   } else if(is.factor(df[[M]])==TRUE ){
@@ -208,7 +303,7 @@ margin <- function(terms, ec, G, M, df){
       terms_matrix[4,] <- c(FALSE, FALSE, FALSE, TRUE)
       # Output error message if EC is not continuous
     } else {
-      stop("The environmental covariate must be numeric when management practice categorical")
+      stop("Error: The environmental covariate must be numeric when management practice categorical")
     }
   } else {
     if(is.numeric(df[[ec]])==TRUE){
@@ -294,9 +389,48 @@ margin <- function(terms, ec, G, M, df){
 #' @return An updated Wald table with an additional column of type logical indicating whether each fixed effect term in the model can be dropped.
 #' @noRd
 dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M){
+  # Error handling for input arguments
+
+  # Check if .fm is provided and is a valid asreml model object
+  if (missing(.fm) || is.null(.fm)) {
+    stop("Error: The argument '.fm' (asreml model object) must be provided and cannot be NULL.")
+  }
+  if (!inherits(.fm, "asreml")) {
+    stop("Error: The argument '.fm' must be a valid asreml model object.")
+  }
+
+  # Check if wald_df is provided and is a valid data frame
+  if (missing(wald_df) || is.null(wald_df)) {
+    stop("Error: The argument 'wald_df' must be provided and cannot be NULL.")
+  }
+  if (!is.data.frame(wald_df)) {
+    stop("Error: The argument 'wald_df' must be a valid data frame.")
+  }
+
+  # Check if .ecs_in_model is provided and is a list of quosures
+  if (missing(.ecs_in_model) || is.null(.ecs_in_model)) {
+    stop("Error: The argument '.ecs_in_model' must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_quosures(.ecs_in_model)) {
+    stop("Error: The argument '.ecs_in_model' must be a list of quosures.")
+  }
+
+  # Check if .M is provided and is a valid character
+  if (missing(.M) || is.null(.M) || .M == "") {
+    stop("Error: The argument '.M' must be provided and cannot be NULL or an empty string.")
+  }
+  if (!is.character(.M) || length(.M) != 1) {
+    stop("Error: The argument '.M' must be a single character string.")
+  }
+
   randomTerms <- attr(.fm$formulae$random, "term.labels") %>%
     stringr::str_replace_all(" ", "") %>%  #remove all spaces to stop any unexpected bugs from occurring
-    stringr::str_replace_all(",k=\\d+","") # Remove the term after the comma within each spl() function to help with matching with the fixed term
+    stringr::str_replace_all(",k=\\d+","") # Remove the term after the comma within each spl()
+                                           # function to help with matching with the fixed term
+  # if (!any(grepl(.M, randomTerms))) {
+  #   stop(paste("Error: The management practice term '", .M, "' does not exist in the random terms of the model.", sep = ""))
+  # }
+
   # Identify each of the EC terms and place into a character vector
   ec_terms_char <-  unlist(purrr::map(.ecs_in_model, rlang::quo_text))
   # Generate EC spline term replacements
@@ -341,15 +475,46 @@ dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M){
 #' @return An asreml model object with a new fixed effets model.
 #' @noRd
 update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", ssType="conditional"){
+  # Error handling for input arguments
+
+  # Check if .fm is provided and is a valid asreml model object
+  if (missing(.fm) || is.null(.fm)) {
+    stop("Error: The argument '.fm' (asreml model object) must be provided and cannot be NULL.")
+  }
+  if (!inherits(.fm, "asreml")) {
+    stop("Error: The argument '.fm' must be a valid asreml model object.")
+  }
+
+  # Check if denDF is a valid value
+  if (!is.character(denDF) || !(denDF %in% c("none", "numeric", "approximate"))) {
+    stop("Error: The argument 'denDF' must be one of 'none', 'numeric', or 'approximate'.")
+  }
+
+  # Check if ssType is a valid value
+  if (!is.character(ssType) || !(ssType %in% c("conditional", "incremental"))) {
+    stop("Error: The argument 'ssType' must be one of 'conditional' or 'incremental'.")
+  }
+
+  # Check if term is a valid character vector if provided
+  if (!rlang::is_missing(term) && (!is.character(term) || length(term) == 0)) {
+    stop("Error: The argument 'term' must be a non-empty character vector if provided.")
+  }
 
   .df <<- base::eval(.fm$call$data)
+
+  # Check if the data frame is valid
+  if (is.null(.df) || !is.data.frame(.df)) {
+    stop("Error: The data frame used in the model could not be retrieved or is not valid.")
+  }
+
   # Define an expression for the fixed and random effect EC terms to be added in the updated model
 
+  # Define the current model components
   curr_fm <- .fm
-
   fixed_terms_curr <- curr_fm$call$fixed
   random_terms_curr <- curr_fm$call$random
   residual_terms_curr <- curr_fm$call$residual
+  # Create the initial asreml call
   curr_call <- rlang::expr(asreml::asreml(fixed= !!fixed_terms_curr  ,
                                           random =  !!random_terms_curr,
                                           residual = !!residual_terms_curr,
@@ -361,11 +526,14 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", 
 
 
   #curr_fm <- eval(curr_call)
+  # If a term is provided, simplify the fixed effects model
   if(rlang::is_missing(term)==FALSE){
     print('Simplifying the FIXED effects model')
-    fixed_terms_curr <- subtract_terms(main_expr = fixed_terms_curr,
-                                       removed_char_vec = term,
-                                       response=TRUE)
+    fixed_terms_curr <- tryCatch({
+      subtract_terms(main_expr = fixed_terms_curr, removed_char_vec = term, response = TRUE)
+    }, error = function(e) {
+      stop("Error during fixed effects simplification: ", e$message)
+    })
 
     curr_call <- rlang::expr(asreml::asreml(fixed= !!fixed_terms_curr  ,
                                             random =  !!random_terms_curr,
@@ -377,7 +545,12 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", 
                                                       ssType="conditional")))
 
   }
-  curr_fm <- eval(curr_call)
+  # Evaluate the updated model
+  curr_fm <- tryCatch({
+    eval(curr_call)
+  }, error = function(e) {
+    stop("Error during dropping of fixed effect term: ", e$message)
+  })
   curr_fm$aov
   if(denDF=="none"){
     wald_df <- asreml::wald.asreml(curr_fm, denDF="none", ssType="conditional")$Wald
@@ -390,7 +563,7 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", 
   h <- dim(curr_fm$aov)[1]
   if(is.na(curr_fm$aov[,colnames(curr_fm$aov)=="Fprob"][h])){
     curr_fm$aov[,colnames(curr_fm$aov)=="Fcon"][h] <- curr_fm$aov[,colnames(curr_fm$aov)=="Finc"][h]
-    curr_fm$aov[,colnames(curr_fm$aov)=="Fprob"][h] <- 1-pchisq(curr_fm$aov[,colnames(curr_fm$aov)=="Fcon"][h],
+    curr_fm$aov[,colnames(curr_fm$aov)=="Fprob"][h] <- 1-stats::pchisq(curr_fm$aov[,colnames(curr_fm$aov)=="Fcon"][h],
                                                                 curr_fm$aov[,colnames(curr_fm$aov)=="df"][h])
     # Make margin term 1 more than the previous term (assums the previous term is a lower order interaction; MAY NEED TO FIX)
     curr_fm$aov[,colnames(curr_fm$aov)=="M"][h] <- curr_fm$aov[,colnames(curr_fm$aov)=="M"][h-1] + 1
@@ -435,9 +608,60 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", 
 #' postPAW_full_asr$call
 #' @export
 ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=6){
+  # Error handling for input arguments
+
+  # Check if .fm is provided and is a valid asreml model object
+  if (missing(.fm) || is.null(.fm)) {
+    stop("Error: The argument '.fm' (asreml model object) must be provided and cannot be NULL.")
+  }
+  if (!inherits(.fm, "asreml")) {
+    stop("Error: The argument '.fm' must be a valid asreml model object.")
+  }
+
+  # Check if .ec, .G, and .M are provided and are valid expressions
+  if (missing(.ec) || is.null(.ec)) {
+    stop("Error: The argument '.ec' (environmental covariate) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(.ec)) {
+    stop("Error: The argument '.ec' must be a valid R expression.")
+  }
+
+  if (missing(.G) || is.null(.G)) {
+    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(.G)) {
+    stop("Error: The argument '.G' must be a valid R expression.")
+  }
+
+  if (missing(.M) || is.null(.M)) {
+    stop("Error: The argument '.M' (management practice term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(.M)) {
+    stop("Error: The argument '.M' must be a valid R expression.")
+  }
+
+  # Check if .kn is a positive integer
+  if (!is.numeric(.kn) || .kn <= 0 || .kn != as.integer(.kn)) {
+    stop("Error: The argument '.kn' must be a positive integer.")
+  }
 
   # Identify the data frame from the model
   .df <<- base::eval(.fm$call$data)
+
+  # Check if the data frame is valid
+  if (is.null(.df) || !is.data.frame(.df)) {
+    stop("Error: The data frame used in the model could not be retrieved or is not valid.")
+  }
+
+  # Check if .ec exists in the data frame
+  if (!rlang::as_string(.ec) %in% colnames(.df)) {
+    stop(paste("Error: The environmental covariate '", rlang::as_string(.ec), "' does not exist in the data frame.", sep = ""))
+  }
+
+  # Check if .M exists in the data frame
+  if (!rlang::as_string(.M) %in% colnames(.df)) {
+    stop(paste("Error: The management practice term '", rlang::as_string(.M), "' does not exist in the data frame.", sep = ""))
+  }
 
   # Allow these terms to be included in the model unquoted
   # .ec <- enexpr(.ec)
@@ -520,6 +744,74 @@ ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=6){
 #' @return A list of information required for asreml.predict with continuous variables (TBC!)
 #' @export
 parallel_predict_list <- function(.df, subset_df, .ec=NULL, .G, .E, .M, baseline_ec_cols=NULL ){
+  # Error handling for input arguments
+
+  # Check if .df is provided and is a valid data frame
+  if (missing(.df) || is.null(.df)) {
+    stop("Error: The argument '.df' (data frame used in the core asreml model) must be provided and cannot be NULL.")
+  }
+  if (!is.data.frame(.df)) {
+    stop("Error: The argument '.df' must be a valid data frame.")
+  }
+
+  # Check if subset_df is provided and is a valid data frame
+  if (missing(subset_df) || is.null(subset_df)) {
+    stop("Error: The argument 'subset_df' (data frame used in the subsetted version during cross-validation) must be provided and cannot be NULL.")
+  }
+  if (!is.data.frame(subset_df)) {
+    stop("Error: The argument 'subset_df' must be a valid data frame.")
+  }
+
+  # Check if .G, .E, and .M are provided and are valid expressions
+  if (missing(.G) || is.null(.G)) {
+    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(.G)) {
+    stop("Error: The argument '.G' must be a valid R expression.")
+  }
+
+  if (missing(.E) || is.null(.E)) {
+    stop("Error: The argument '.E' (environment term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(.E)) {
+    stop("Error: The argument '.E' must be a valid R expression.")
+  }
+
+  if (!is.null(.M) && !rlang::is_expression(.M)) {
+    stop("Error: The argument '.M' (management practice term) must be a valid R expression if provided.")
+  }
+
+  # Check if .ec is a valid expression if provided
+  if (!is.null(.ec) && !rlang::is_expression(.ec)) {
+    stop("Error: The argument '.ec' (environmental covariate) must be a valid R expression if provided.")
+  }
+
+  # Check if baseline_ec_cols is a valid numeric vector if provided
+  if (!is.null(baseline_ec_cols) && (!is.numeric(baseline_ec_cols) || any(baseline_ec_cols <= 0))) {
+    stop("Error: The argument 'baseline_ec_cols' must be a numeric vector of positive integers if provided.")
+  }
+
+  # Check if .G, .E, and .M exist in the data frame
+  if (!rlang::as_string(.G) %in% colnames(.df)) {
+    stop(paste("Error: The genotype term '", rlang::as_string(.G), "' does not exist in the data frame '.df'.", sep = ""))
+  }
+  if (!rlang::as_string(.E) %in% colnames(.df)) {
+    stop(paste("Error: The environment term '", rlang::as_string(.E), "' does not exist in the data frame '.df'.", sep = ""))
+  }
+  if (!is.null(.M) && !rlang::as_string(.M) %in% colnames(.df)) {
+    stop(paste("Error: The management practice term '", rlang::as_string(.M), "' does not exist in the data frame '.df'.", sep = ""))
+  }
+
+  # Check if .ec exists in the data frame if provided
+  if (!is.null(.ec) && !rlang::as_string(.ec) %in% colnames(.df)) {
+    stop(paste("Error: The environmental covariate '", rlang::as_string(.ec), "' does not exist in the data frame '.df'.", sep = ""))
+  }
+
+  # Check if baseline_ec_cols are valid column indices in the data frame
+  if (!is.null(baseline_ec_cols) && any(baseline_ec_cols > ncol(.df))) {
+    stop("Error: One or more values in 'baseline_ec_cols' exceed the number of columns in '.df'.")
+  }
+
   # Define a table that will be used to generate model predictions later on
   # Identify the classify list and levels of each factor based on whether a trial term is included in the model
   if(is.null(.ec)==TRUE){

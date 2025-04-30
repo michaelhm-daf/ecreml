@@ -43,6 +43,9 @@ Note that this is ignored of the environmental covariate is a factor}
 An example is when each TOS within a trial constitutes an environment for the purposes of identifying important environmental covariates}
 
 \item{ecs_in_bline_model}{An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.}
+
+\item{denDF}{A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
+Options include \code{none}, \code{algebraic} or \code{numeric}.}
 }
 \value{
 A list with 2 components:

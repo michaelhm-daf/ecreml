@@ -53,14 +53,78 @@
 #' @export
 rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                       .cores=2, .kn=6, .ecs_in_bline_model=rlang::quos(NULL)){
+
+
+  # Error handling for input arguments
+
+  # Check if .fm is provided and is a valid asreml model object
+  if (missing(.fm) || is.null(.fm)) {
+    stop("Error: The argument '.fm' (baseline model) must be provided and cannot be NULL.")
+  }
+  if (!inherits(.fm, "asreml")) {
+    stop("Error: The argument '.fm' must be a valid asreml model object.")
+  }
+
+  # Check if .G, .E, and .M are provided and are expressions
+  if (missing(.G) || is.null(.G)) {
+    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(.G)) {
+    stop("Error: The argument '.G' must be a valid R expression.")
+  }
+
+  if (missing(.E) || is.null(.E)) {
+    stop("Error: The argument '.E' (environment term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(.E)) {
+    stop("Error: The argument '.E' must be a valid R expression.")
+  }
+
+  if (!is.null(.M) && !rlang::is_expression(.M)) {
+    stop("Error: The argument '.M' (management practice term) must be a valid R expression if provided.")
+  }
+
+  # Check if .trial is an expression if provided
+  if (!is.null(.trial) && !rlang::is_expression(.trial)) {
+    stop("Error: The argument '.trial' must be a valid R expression if provided.")
+  }
+
+  # Check if .env_cv_df is a data frame if provided
+  if (!is.null(.env_cv_df) && !is.data.frame(.env_cv_df)) {
+    stop("Error: The argument '.env_cv_df' must be a data frame if provided.")
+  }
+
+  # Check if .cores is a positive integer
+  if (!is.numeric(.cores) || .cores <= 0 || .cores != as.integer(.cores)) {
+    stop("Error: The argument '.cores' must be a positive integer.")
+  }
+
+  # Check if .kn is a positive integer
+  if (!is.numeric(.kn) || .kn <= 0 || .kn != as.integer(.kn)) {
+    stop("Error: The argument '.kn' must be a positive integer.")
+  }
+
+  # Check if .ecs_in_bline_model is a list of quosures
+  if (!is.null(.ecs_in_bline_model) && !rlang::is_quosures(.ecs_in_bline_model)) {
+    stop("Error: The argument '.ecs_in_bline_model' must be a list of quosures if provided.")
+  }
+
   # Obtain the data frame from the baseline model
-  .df  <- base::eval(.fm$call$data)
+  .df <- base::eval(.fm$call$data)
+
+  # Check if the data frame is valid
+  if (is.null(.df) || !is.data.frame(.df)) {
+    stop("Error: The data frame used in the baseline model could not be retrieved or is not valid.")
+  }
+
+
   # Now also round all continuous variables in df to 4 decimal places to avoid errors later on due to merging of data frames
   .df <- .df %>% purrr::modify_if(is.numeric, round, digits=4)
   # Remove cv_group from .df if it exists to stop bugs from happening
   if(length(which(colnames(.df)=="cv_group"))>0){
     .df <- .df %>%  dplyr::select(!"cv_group") %>% as.data.frame()
   }
+
 
 
   # ADD AN ERROR MESSAGE IF AT() HAS LEVELS NUMBERED INSTEAD OF STATED!!!!!!!!!!!!!!!!!!!!!!!!
@@ -399,6 +463,8 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' @param kn The number of knot points for the spline component of the model for the environment covariate being tested.
 #' Note that this is ignored of the environmental covariate is a factor
 #' @param ecs_in_bline_model An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.
+#' @param denDF A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
+#' Options include \code{none}, \code{algebraic} or \code{numeric}.
 #'
 #' @return A list with 2 components:
 #' \itemize{
@@ -436,6 +502,87 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' @export
 ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
                          ecs_in_bline_model=rlang::maybe_missing(), denDF="numeric"){
+  # Error handling for input arguments
+
+  # Check if fm is provided and is a valid asreml model object
+  if (missing(fm) || is.null(fm)) {
+    stop("Error: The argument 'fm' (baseline model) must be provided and cannot be NULL.")
+  }
+  if (!inherits(fm, "asreml")) {
+    stop("Error: The argument 'fm' (baseline model) must be a valid asreml model object.")
+  }
+
+  # Check if ECs is provided and is a list of quosures
+  if (missing(ECs) || is.null(ECs)) {
+    stop("Error: The argument 'ECs' (environmental covariates) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_quosures(ECs)) {
+    stop("Error: The argument 'ECs' (environmental covariates) must be a list of quosures.")
+  }
+
+  # Check if G, E, and M are provided and are expressions
+  if (missing(G) || is.null(G)) {
+    stop("Error: The argument 'G' (genotype term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(G)) {
+    stop("Error: The argument 'G' (genotype term) must be a valid R expression.")
+  }
+
+  if (missing(E) || is.null(E)) {
+    stop("Error: The argument 'E' (environment term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(E)) {
+    stop("Error: The argument 'E'(environment term) must be a valid R expression.")
+  }
+
+  if (missing(M) || is.null(M)) {
+    stop("Error: The argument 'M' (management practice term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(M)) {
+    stop("Error: The argument 'M' (management practice term) must be a valid R expression.")
+  }
+
+  # Check if trial is an expression if provided
+  if (!is.null(trial) && !rlang::is_expression(trial)) {
+    stop("Error: The argument 'trial' must be a valid R expression if provided.")
+  }
+
+  # Check if env_cv_df is a data frame if provided
+  if (!is.null(env_cv_df) && !is.data.frame(env_cv_df)) {
+    stop("Error: The argument 'env_cv_df' must be a data frame if provided.")
+  }
+
+  # Check if ncores is a positive integer
+  if (!is.numeric(ncores) || ncores <= 0 || ncores != as.integer(ncores)) {
+    stop("Error: The argument 'ncores' must be a positive integer.")
+  }
+
+  # Check if kn is a positive integer
+  if (!is.numeric(kn) || kn <= 0 || kn != as.integer(kn)) {
+    stop("Error: The argument 'kn' must be a positive integer.")
+  }
+
+  # Check if ecs_in_bline_model is a list of quosures
+  if (!rlang::is_missing(ecs_in_bline_model) && !rlang::is_quosures(ecs_in_bline_model)) {
+    stop("Error: The argument 'ecs_in_bline_model' must be a list of quosures if provided.")
+  }
+
+  # Check if denDF is a valid value
+  if (!is.character(denDF) || !(denDF %in% c("none", "numeric", "algebraic"))) {
+    stop("Error: The argument 'denDF' (denominator degrees of freedom calculation method) must be one of 'none', 'numeric', or 'algebraic'.")
+  }
+
+  # Check for Validity of Cross-Validation Data
+  if (!is.null(env_cv_df)) {
+    if (!rlang::as_string(E) %in% colnames(env_cv_df)) {
+      stop("Error: The environment term ('E') is missing from the provided cross-validation data frame ('env_cv_df').")
+    }
+    if (length(unique(env_cv_df$cv_group)) < ncores) {
+      stop("Error: The number of cross-validation groups in 'env_cv_df' is less than the number of cores specified ('ncores').")
+    }
+  }
+
+
   curr_fm <- fm
   #quo_ecs_bl <- rlang::enquos(ecs_in_bline_model)
 
@@ -446,19 +593,28 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
   # M <- enexpr(M)
   #trial <- enexpr(trial)
 
-
   # Identify the data frame from the model
   .df <<- base::eval(fm$call$data)
+
+  # Check if the data frame is valid
+  if (is.null(.df) || !is.data.frame(.df)) {
+    stop("Error: The data frame used in the model could not be retrieved or is not valid.")
+  }
 
   # Put ECs in a quosure
   #quo_ecs <- rlang::enquos(ECs)
 
   #quo_ecs <- rlang::quos(PrePAW:PostPAW, PreCumRad)
 
-  # Identify the EC variables
+  # Check if the columns corresponding to ECs exist in the data frame
   vars <- as.list(magrittr::set_names(seq_along(.df), names(.df)))
-  # Identify which columns in the data frame consist to the ECs to be assessed
   cols_ecs <- unlist(purrr::map(ECs, rlang::eval_tidy, vars))
+  if (length(cols_ecs) == 0) {
+    stop("Error: The 'ECs' argument does not contain any valid environmental covariates.")
+  }
+  if (any(is.na(cols_ecs))) {
+    stop("Error: One or more environmental covariates in 'ECs' do not exist in the data frame used in the model.")
+  }
   # Use the columns to obtain a vector of EC terms
   ec_terms_char <- colnames(.df[cols_ecs])
 
@@ -471,6 +627,14 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
     # # Use the columns to obtain a vector of EC terms
     cols_bl_ecs <- unlist(purrr::map(ecs_in_bline_model, rlang::eval_tidy, vars))
     ec_bl_terms_char <- colnames(.df[cols_bl_ecs])
+    # Check for Duplicate or Conflicting Environmental Covariates
+    ecs_in_bline_model_names <- purrr::map_chr(ecs_in_bline_model, rlang::as_label)
+    ECs_names <- purrr::map_chr(ECs, rlang::as_label)
+    common_ecs <- base::intersect(ECs_names, ecs_in_bline_model_names)
+    if (length(common_ecs) > 0) {
+      stop(paste("Error: The following environmental covariates appear in both 'ECs' and 'ecs_in_bline_model':",
+                 paste(common_ecs, collapse = ", ")))
+    }
   }
 
 
@@ -504,18 +668,30 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 
       ec_candidate <- rlang::parse_expr(ec_candid)
       # First define the model with every EC term for the candidate EC
-      candid_fm <- ec_full_model_constructor(.fm=curr_fm, .ec=ec_candidate, .G=G, .M=M, .kn=6)
+      tryCatch({
+        candid_fm <- ec_full_model_constructor(.fm = curr_fm, .ec = ec_candidate, .G = G, .M = M, .kn = kn)
+      }, error = function(e) {
+        stop("Error during candidate model construction: ", e$message)
+      })
 
       #ecs_in_candidate <- rlang::parse_quos(ec_candid, rlang::current_env())
       ecs_in_candidate <- rlang::parse_quos(c(ec_bl_terms_char, ec_candid), rlang::current_env())
       # Remove non-significant fixed and random effects for the ECs in the candidate model
-      candid_fm <- simplify_ec_model(.fm=candid_fm, .ecs_in_model = ecs_in_candidate, .G=rlang::expr_text(G),
-                                     .M=rlang::expr_text(M), denDF=denDF)
+      tryCatch({
+        candid_fm <- simplify_ec_model(.fm = candid_fm, .ecs_in_model = ecs_in_candidate, .G = rlang::expr_text(G),
+                                       .M = rlang::expr_text(M), denDF = denDF)
+      }, error = function(e) {
+        stop("Error during model simplification: ", e$message)
+      })
 
       ec_candidate_bl <- rlang::parse_quos(c(ec_bl_terms_char, ec_candid), rlang::current_env())
       # Calculate the RMSE of the simplified model
-      rmse_candid <- rmse_calc(.fm= candid_fm, .G=G, .E=E, .M=M, .trial=trial, .env_cv_df = env_cv_df,
-                               .cores=ncores, .kn=kn, .ecs_in_bline_model=ec_candidate_bl)$Rmse
+      tryCatch({
+        rmse_candid <- rmse_calc(.fm = candid_fm, .G = G, .E = E, .M = M, .trial = trial, .env_cv_df = env_cv_df,
+                                 .cores = ncores, .kn = kn, .ecs_in_bline_model = ec_candidate_bl)$Rmse
+      }, error = function(e) {
+        stop("Error during RMSE calculation: ", e$message)
+      })
 
       # If the RMSE for the candidate model is better than the current model, then update the current model to be the candidate model
       if( rmse_candid < rmse_curr ){
@@ -527,6 +703,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
         # If there are no more candidate EC models to choose from, finish the while loop and return the initial model as the best model
         if(dim(ec_summary)[1]<=0){
           continue <- FALSE
+          warning("Warning: No more candidate environmental covariates to evaluate. The forward selection process has terminated.")
         }
       }
     } else { # If the best full EC candidate model is worse then the current model, then there are no ECs that can further improve the model
@@ -562,6 +739,8 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 #' @param kn The number of knot points for the spline component of the model for the environment covariate being tested.
 #' Note that this is ignored of the environmental covariate is a factor
 #' @param ecs_in_bline_model An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.
+#' @param denDF A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
+#' Options include \code{none}, \code{algebraic} or \code{numeric}.
 #'
 #' @return A list with 2 components:
 #' \itemize{
@@ -599,8 +778,86 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 #' @export
 ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::maybe_missing(), denDF="numeric"){
 
+  # Error handling for input arguments
+
+  # Check if fm is provided and is a valid asreml model object
+  if (missing(fm) || is.null(fm)) {
+    stop("Error: The argument 'fm' (baseline model) must be provided and cannot be NULL.")
+  }
+  if (!inherits(fm, "asreml")) {
+    stop("Error: The argument 'fm' (baseline model) must be a valid asreml model object.")
+  }
+
+  # Check if ECs is provided and is a list of quosures
+  if (missing(ECs) || is.null(ECs)) {
+    stop("Error: The argument 'ECs' (environmental covariates) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_quosures(ECs)) {
+    stop("Error: The argument 'ECs' (environmental covariates) must be a list of quosures.")
+  }
+
+  # Check if G, E, and M are provided and are expressions
+  if (missing(G) || is.null(G)) {
+    stop("Error: The argument 'G' (genotype term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(G)) {
+    stop("Error: The argument 'G' (genotype term) must be a valid R expression.")
+  }
+
+  if (missing(E) || is.null(E)) {
+    stop("Error: The argument 'E' (environment term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(E)) {
+    stop("Error: The argument 'E' (environment term) must be a valid R expression.")
+  }
+
+  if (missing(M) || is.null(M)) {
+    stop("Error: The argument 'M' (management practice term) must be provided and cannot be NULL.")
+  }
+  if (!rlang::is_expression(M)) {
+    stop("Error: The argument 'M' (management practice term) must be a valid R expression.")
+  }
+
+  # Check if trial is an expression if provided
+  if (!is.null(trial) && !rlang::is_expression(trial)) {
+    stop("Error: The argument 'trial' must be a valid R expression if provided.")
+  }
+
+  # Check if env_cv_df is a data frame if provided
+  if (!is.null(env_cv_df) && !is.data.frame(env_cv_df)) {
+    stop("Error: The argument 'env_cv_df' must be a data frame if provided.")
+  }
+
+  # Check if ncores is a positive integer
+  if (!is.numeric(ncores) || ncores <= 0 || ncores != as.integer(ncores)) {
+    stop("Error: The argument 'ncores' must be a positive integer.")
+  }
+
+  # Check if kn is a positive integer
+  if (!is.numeric(kn) || kn <= 0 || kn != as.integer(kn)) {
+    stop("Error: The argument 'kn' must be a positive integer.")
+  }
+
+  # Check if ecs_in_bline_model is a list of quosures
+  if (!rlang::is_missing(ecs_in_bline_model) && !rlang::is_quosures(ecs_in_bline_model)) {
+    stop("Error: The argument 'ecs_in_bline_model' must be a list of quosures if provided.")
+  }
+
+  # Check if denDF is a valid value
+  if (!is.character(denDF) || !(denDF %in% c("none", "numeric", "algebraic"))) {
+    stop("Error: The argument 'denDF' (denominator degrees of freedom calculation method) must be one of 'none', 'numeric', or 'algebraic'.")
+  }
+
+
   # Identify the data frame from the model
   .df <<- base::eval(fm$call$data)
+
+
+  # Check if the data frame is valid
+  if (is.null(.df) || !is.data.frame(.df)) {
+    stop("Error: The data frame used in the model could not be retrieved or is not valid.")
+  }
+
 
   # Define the current model to be the initial model
   curr_fm <- fm
@@ -613,10 +870,15 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
   # Define a term that keeps track of whether to keep searching for ECs
   continue_ec_search <- TRUE
 
-  # Identify the EC variables
+  # Check if the columns corresponding to ECs exist in the data frame
   vars <- as.list(magrittr::set_names(seq_along(.df), names(.df)))
-  # Identify which columns in the data frame consist to the ECs to be assessed
-  cols_ecs <- cols_ecs <- unlist(purrr::map(ECs, rlang::eval_tidy, vars))
+  cols_ecs <- unlist(purrr::map(ECs, rlang::eval_tidy, vars))
+  if (length(cols_ecs) == 0) {
+    stop("Error: The 'ECs' argument does not contain any valid environmental covariates.")
+  }
+  if (any(is.na(cols_ecs))) {
+    stop("Error: One or more environmental covariates in 'ECs' do not exist in the data frame used in the model.")
+  }
   # Use the columns to obtain a vector of EC terms
   ec_terms_char <- colnames(.df[cols_ecs])
   # Define a quosure for the ecs to select from
@@ -636,6 +898,15 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
 
     cols_bl_ecs <- unlist(purrr::map(ecs_in_bline_model, rlang::eval_tidy, vars))
     ec_bl_terms_char <- colnames(.df[cols_bl_ecs])
+
+    # Check for duplicate or conflicting environmental covariates
+    ecs_in_bline_model_names <- purrr::map_chr(ecs_in_bline_model, rlang::as_label)
+    ECs_names <- purrr::map_chr(ECs, rlang::as_label)
+    common_ecs <- intersect(ECs_names, ecs_in_bline_model_names)
+    if (length(common_ecs) > 0) {
+      stop(paste("Error: The following environmental covariates appear in both 'ECs' and 'ecs_in_bline_model':",
+                 paste(common_ecs, collapse = ", ")))
+    }
   }
 
   # Do the same for ecs in current baseline model
@@ -643,13 +914,22 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
 
 
   # Run the algorithm for a single iteration to calculate the INITIAL RMSE
-  curr_rmse <- rmse_calc(.fm= curr_fm, .G=G, .E=E, .M=M, .trial=trial, .env_cv_df = env_cv_df,
-                         .cores=ncores, .kn=kn, .ecs_in_bline_model=ecs_in_curr_bl_model)$Rmse
+  tryCatch({
+    curr_rmse <- rmse_calc(.fm = curr_fm, .G = G, .E = E, .M = M, .trial = trial, .env_cv_df = env_cv_df,
+                           .cores = ncores, .kn = kn, .ecs_in_bline_model = ecs_in_bline_model)$Rmse
+  }, error = function(e) {
+    stop("Error during initial RMSE calculation: ", e$message)
+  })
 
   while(continue_ec_search==TRUE){
-    ec_iter <- ec_iteration(fm = curr_fm, ECs = ecs_to_select_from, G=G, E=E, M=M, env_cv_df=env_cv_df,
-                            ncores=ncores, kn=kn, trial=trial,
-                            ecs_in_bline_model=ecs_in_curr_bl_model, denDF=denDF)
+    tryCatch({
+      ec_iter <- ec_iteration(fm = curr_fm, ECs = ecs_to_select_from, G = G, E = E, M = M, env_cv_df = env_cv_df,
+                              ncores = ncores, kn = kn, trial = trial,
+                              ecs_in_bline_model = ecs_in_curr_bl_model, denDF = denDF)
+    }, error = function(e) {
+      stop("Error during environmental covariate iteration: ", e$message)
+    })
+
     ec_candid_fm <- ec_iter$fm
     candid_rmse <- ec_iter$rmse
     # If the model has been has changed, set the current model to be the candidate model, otherwise finish

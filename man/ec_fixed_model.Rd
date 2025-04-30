@@ -14,6 +14,9 @@ ec_fixed_model(.fm, .ecs_in_model, .G, .M, denDF = "none")
 \item{.G}{The genotype term in the model as a character}
 
 \item{.M}{The management practice term in the model a character}
+
+\item{denDF}{A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
+Options include \code{none}, \code{algebraic} or \code{numeric}.}
 }
 \value{
 An updated asreml model such that the non-significant environmental covariate fixed effect terms have been removed from the model.
