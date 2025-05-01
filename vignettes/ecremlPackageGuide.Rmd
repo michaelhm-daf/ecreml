@@ -1,0 +1,31 @@
+---
+title: "ecreml R-Package Guide"
+author: Michael Mumford
+date: 01/05/2025
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+csl: biometrics.csl
+vignette: >
+  %\VignetteIndexEntry{ecremlPackageGuide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(asreml)
+library(ecreml)
+```
+
+
+## Introduction
+
+A vignette for the `ecreml` `R`-package will be included in the near future.
