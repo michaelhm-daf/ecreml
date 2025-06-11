@@ -33,10 +33,13 @@ Imports:
     tidyverse (>= 2.0.0)
 Suggests: 
     agridat (>= 1.2.1),
+    bookdown,
+    bslib,
     knitr,
     rmarkdown,
     roxygen2,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    viridis
 URL: https://github.com/michaelhm-daf/ecreml
 BugReports: https://github.com/michaelhm-daf/ecreml/issues
 LazyData: true

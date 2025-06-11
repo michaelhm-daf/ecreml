@@ -4,7 +4,7 @@
 \alias{ec_random_model}
 \title{Identify the most parsimonious EC random effects model}
 \usage{
-ec_random_model(.fm, .ecs_in_model, .G, .M)
+ec_random_model(.fm, .ecs_in_model, .G, .M, .kn = 10)
 }
 \arguments{
 \item{.fm}{The current \code{asreml} model object that random environmental covariate terms will be tested from.}

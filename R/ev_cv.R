@@ -38,7 +38,7 @@
 #'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
 #'    at(Trial,'Breeza 1'):Column +
 #'    Trial + Env +
-#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    spl(density, k=10) + spl(density, k=10):Genotype +
 #'    str(~Trial:Genotype + Trial:Genotype:density,
 #'        ~corh(2):id(48)) +
 #'    str(~Env:Genotype + Env:Genotype:density,
@@ -53,7 +53,7 @@
 #' baseline_rmse$Rmse
 #' @export
 rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
-                      .cores=2, .kn=6, .ecs_in_bline_model=rlang::quos(NULL)){
+                      .cores=2, .kn=10, .ecs_in_bline_model=rlang::quos(NULL)){
 
 
   # Error handling for input arguments
@@ -485,7 +485,7 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
 #'    at(Trial,'Breeza 1'):Column +
 #'    Trial + Env +
-#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    spl(density, k=10) + spl(density, k=10):Genotype +
 #'    str(~Trial:Genotype + Trial:Genotype:density,
 #'        ~corh(2):id(48)) +
 #'    str(~Env:Genotype + Env:Genotype:density,
@@ -502,7 +502,7 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' ec1_model_asr$fm$call
 #' ec1_model_asr$rmse
 #' @export
-ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL,
+ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL,
                          ecs_in_bline_model=rlang::maybe_missing(), denDF="numeric"){
   # Error handling for input arguments
 
@@ -762,7 +762,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 #'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
 #'    at(Trial,'Breeza 1'):Column +
 #'    Trial + Env +
-#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    spl(density, k=10) + spl(density, k=10):Genotype +
 #'    str(~Trial:Genotype + Trial:Genotype:density,
 #'        ~corh(2):id(48)) +
 #'    str(~Env:Genotype + Env:Genotype:density,
@@ -779,7 +779,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial
 #' ec_model_asr$fm$call
 #' ec_model_asr$rmse
 #' @export
-ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::maybe_missing(), denDF="numeric"){
+ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL, ecs_in_bline_model=rlang::maybe_missing(), denDF="numeric"){
 
   # Error handling for input arguments
 

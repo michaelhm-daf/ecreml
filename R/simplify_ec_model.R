@@ -46,7 +46,7 @@
 #' random_simplify_asr <- ec_random_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
 #' random_simplify_asr$call
 #' @export
-ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
+ec_random_model <- function(.fm, .ecs_in_model, .G, .M, .kn=10){
 
   # Error handling for input arguments
 
@@ -185,7 +185,8 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M){
     # Need to define ec as a character to resolve error message for some reason
     tryCatch({
       temp_ec_terms_df$Margin <- margin(terms = temp_ec_terms_df$Term,
-                                        ec = as.character(ec_terms_char[i]), G = .G, M = .M, df = .df)
+                                        ec = as.character(ec_terms_char[i]), G = .G,
+                                        M = .M, df = .df, .kn=.kn)
     }, error = function(e) {
       stop("Error during margin calculation for random terms: ", e$message)
     })
@@ -451,7 +452,7 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
   ec_terms_for_grep <- paste(ec_terms_char, collapse = "|")
   which_fixed_ec_terms <- grep(ec_terms_for_grep, attr(.fm$formulae$fixed, "term.labels"))
   if (length(which_fixed_ec_terms) == 0) {
-    stop("Error: No fixed effect terms corresponding to the environmental covariates were found in the model.")
+    warning("Warning: No fixed effect terms corresponding to the environmental covariates were found in the model.")
   }
 
   # Identify each of the EC terms and place into a character vector
@@ -487,7 +488,7 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
   wald_init_df <- as.data.frame(.fm$aov)
 
   # If denominator df cannot be calculated by asreml, use wald test instead
-  if( (denDF!="none") & (length(is.na(wald_init_df$denDF)) > 0) ){
+  if( (denDF!="none") & (length( wald_init_df$denDF[is.na(wald_init_df$denDF)==TRUE] ) > 0) ){
     #wald_init_df <- wald_approx_pvalue(wald_init_df)
     warning("Denominator degrees of freedom could not be calculated. Falling back to Wald statistic.")
     denDF <- "none"
@@ -646,7 +647,7 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
 #' simplify_asr <- simplify_ec_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
 #' simplify_asr$call
 #' @export
-simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
+simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none", .kn=10){
 
 
   # Error handling for input arguments
@@ -713,7 +714,7 @@ simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
   while(KeepSimplifying==TRUE){
     # Simplify the random effects
     new_random_fm <- tryCatch(
-      ec_random_model(.fm = curr_fm, .ecs_in_model = .ecs_in_model, .G = .G, .M = .M),
+      ec_random_model(.fm = curr_fm, .ecs_in_model = .ecs_in_model, .G = .G, .M = .M, .kn=.kn),
       error = function(e) {
         stop("Error during random effects simplification: ", e$message)
       }

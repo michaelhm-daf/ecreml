@@ -204,7 +204,7 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
 #' @return A vector of type double indicating the hierarchical structure of the random terms in the model for a particular environmental covariate
 #' @noRd
 
-margin <- function(terms, ec, G, M, df){
+margin <- function(terms, ec, G, M, df, .kn=10){
   # Error handling for input arguments
 
   # Check if terms is provided and is a character vector
@@ -289,7 +289,10 @@ margin <- function(terms, ec, G, M, df){
   } else if(is.factor(df[[M]])==TRUE ){
     if(is.numeric(df[[ec]])==TRUE){
       # # Create a matrix determining the marginality
-      terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G")
+      terms_possible <- c(paste0("spl(x, k = ", .kn, ")"),
+                          paste0("M:spl(x, k = ", .kn, ")"),
+                          paste0("spl(x, k = ", .kn, "):G"),
+                          paste0("M:spl(x, k = ", .kn, "):G"))
 
       terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
       rownames(terms_matrix) <- terms_possible
@@ -308,7 +311,14 @@ margin <- function(terms, ec, G, M, df){
   } else {
     if(is.numeric(df[[ec]])==TRUE){
       # # Create a matrix determining the marginality
-      terms_possible <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G","spl(M, k = 6):x","spl(M, k = 6):x:G","spl(M, k = 6):spl(x, k = 6)","spl(M, k = 6):spl(x, k = 6):G")
+      terms_possible <- c( paste0("spl(x, k = ", .kn, ")"),
+                           paste0("M:spl(x, k = ", .kn, ")"),
+                           paste0("spl(x, k = ", .kn, "):G"),
+                           paste0("M:spl(x, k = ", .kn, "):G"),
+                           paste0("spl(M, k = ", .kn, "):x"),
+                           paste0("spl(M, k = ", .kn, "):x:G"),
+                           paste0("spl(M, k = ", .kn, "):", "spl(x, k = ", .kn, ")"),
+                           paste0("spl(M, k = ", .kn, "):", "spl(x, k = ", .kn, "):G"))
 
       terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
       rownames(terms_matrix) <- terms_possible
@@ -325,7 +335,8 @@ margin <- function(terms, ec, G, M, df){
       terms_matrix[8,] <- c(FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE)
     } else {
       # # Create a matrix determining the marginality
-      terms_possible <- c("spl(M, k = 6):x","spl(M, k = 6):x:G")
+      terms_possible <- c(paste0("spl(M, k = ", .kn, "):x"),
+                          paste0("spl(M, k = ", .kn, "):x:G"))
 
       terms_matrix <- matrix(FALSE, nrow=length(terms_possible), ncol=length(terms_possible))
       rownames(terms_matrix) <- terms_possible
@@ -474,7 +485,7 @@ dropFixedTerm <- function(.fm, wald_df, .ecs_in_model, .M){
 #'
 #' @return An asreml model object with a new fixed effets model.
 #' @noRd
-update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", ssType="conditional"){
+update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="none", ssType="conditional"){
   # Error handling for input arguments
 
   # Check if .fm is provided and is a valid asreml model object
@@ -486,8 +497,8 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", 
   }
 
   # Check if denDF is a valid value
-  if (!is.character(denDF) || !(denDF %in% c("none", "numeric", "approximate"))) {
-    stop("Error: The argument 'denDF' must be one of 'none', 'numeric', or 'approximate'.")
+  if (!is.character(denDF) || !(denDF %in% c("none", "numeric", "algebraic"))) {
+    stop("Error: The argument 'denDF' must be one of 'none', 'numeric', or 'algebraic'.")
   }
 
   # Check if ssType is a valid value
@@ -553,7 +564,7 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", 
   })
   curr_fm$aov
   if(denDF=="none"){
-    wald_df <- asreml::wald.asreml(curr_fm, denDF="none", ssType="conditional")$Wald
+    wald_df <- asreml::wald.asreml(curr_fm, denDF=denDF, ssType="conditional")$Wald
     wald_df
     curr_fm$aov[,colnames(curr_fm$aov)=="Finc"] <- wald_df[,colnames(wald_df)=="Wald(inc)"]
     curr_fm$aov[,colnames(curr_fm$aov)=="Fcon"] <- wald_df[,colnames(wald_df)=="Wald(con)"]
@@ -608,7 +619,7 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="numeric", 
 #' postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
 #' postPAW_full_asr$call
 #' @export
-ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=6){
+ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=10){
   # Error handling for input arguments
 
   # Check if .fm is provided and is a valid asreml model object

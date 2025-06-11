@@ -117,7 +117,7 @@ cv_groups <- function(E, folds = 6) {
 #'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
 #'    at(Trial,'Breeza 1'):Column +
 #'    Trial + Env +
-#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    spl(density, k=10) + spl(density, k=6):Genotype +
 #'    str(~Trial:Genotype + Trial:Genotype:density,
 #'        ~corh(2):id(48)) +
 #'    str(~Env:Genotype + Env:Genotype:density,
@@ -132,7 +132,7 @@ cv_groups <- function(E, folds = 6) {
 #'
 #' @export
 ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
-                       .cores=2, .kn=6, .ecs_in_bline_model=rlang::quos(NULL), aliased=FALSE){
+                       .cores=2, .kn=10, .ecs_in_bline_model=rlang::quos(NULL), aliased=FALSE){
 
   # Error handling for input arguments
 
@@ -691,7 +691,7 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
 #'    at(Trial,'Breeza 1'):Column +
 #'    Trial + Env +
-#'    spl(density, k=6) + spl(density, k=6):Genotype +
+#'    spl(density, k=10) + spl(density, k=10):Genotype +
 #'    str(~Trial:Genotype + Trial:Genotype:density,
 #'        ~corh(2):id(48)) +
 #'    str(~Env:Genotype + Env:Genotype:density,
@@ -708,7 +708,7 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' ec_search$summary_ecs
 #' @export
 ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
-                      cores=2, kn=6, trial=NULL, ecs_in_bline_model=rlang::quos(NULL))
+                      cores=2, kn=10, trial=NULL, ecs_in_bline_model=rlang::quos(NULL))
 {
   # Error handling for input arguments
 

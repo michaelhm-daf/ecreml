@@ -4,7 +4,7 @@
 \alias{ec_full_model_constructor}
 \title{Creates an updated model which is the same as the current model but adds one new EC into the model}
 \usage{
-ec_full_model_constructor(.fm, .ec, .G, .M, .kn = 6)
+ec_full_model_constructor(.fm, .ec, .G, .M, .kn = 10)
 }
 \arguments{
 \item{.fm}{An \code{asreml} model object without the environmental covariate in the model.}

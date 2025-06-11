@@ -12,7 +12,7 @@ ec_iteration(
   M,
   env_cv_df = NULL,
   ncores = 2,
-  kn = 6,
+  kn = 10,
   trial = NULL,
   ecs_in_bline_model = rlang::maybe_missing(),
   denDF = "numeric"
@@ -71,7 +71,7 @@ baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
    at(Trial,'Breeza 1'):Column +
    Trial + Env +
-   spl(density, k=6) + spl(density, k=6):Genotype +
+   spl(density, k=10) + spl(density, k=10):Genotype +
    str(~Trial:Genotype + Trial:Genotype:density,
        ~corh(2):id(48)) +
    str(~Env:Genotype + Env:Genotype:density,
