@@ -21,17 +21,8 @@ knitr::opts_chunk$set(
 # opts_chunk$set(comment=NA, warning=FALSE,message=FALSE,fig.align='center',background='white',
 #               dev="jpeg", dev.args=list(type="cairo"), dpi=300)
 
-# output:
-#   prettydoc::html_pretty:
-#     theme: cayman
-#     highlight: github
-
-# css: cerulean.css
 
 ```
-
-
-
 
 ## Introduction
 
