@@ -36,6 +36,7 @@ Suggests:
     bookdown,
     bslib,
     knitr,
+    quarto,
     rmarkdown,
     roxygen2,
     testthat (>= 3.0.0),

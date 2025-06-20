@@ -1,7 +1,7 @@
-#' @title Calculate the RMSE for a given model
+#' @title Calculate the RMSEP for a given model
 #' @description
 #' `r lifecycle::badge("experimental")`
-#' This function calculates the RMSE for the current model by implementing the k-fold cross validation and then calculating the
+#' This function calculates the RMSEP for the current model by implementing the k-fold cross validation and then calculating the
 #' predictions obtained in an untested environment.
 #'
 #' @param .fm The baseline \code{asreml} model object that environmental covariates will be added to.
@@ -24,7 +24,7 @@
 #'  \item \code{Cor}: The Pearson correlation of the predicted values from the baseline model
 #'  compared with the predictions obtained with the environment covariate included in an untested environment.
 #'  The predictions are obtained internally using \code{asreml::predict.asreml}.
-#'  \item \code{Rmse}: the full log-likelihood for each model
+#'  \item \code{Rmsep}: the full log-likelihood for each model
 #'  \item \code{Resids_cv}: The squared differences between the baseline model and the cross-validation predictions for each \code{GxExM} combination
 #'  }
 #' @examples
@@ -47,12 +47,12 @@
 #'   data = SorghumYield,
 #'   na.action=na.method(x='include'),
 #'   maxit=30, workspace="1Gb")
-#' # Calculate the (average) root mean square error (rmse) of prediction
-#' baseline_rmse <- rmse_calc(.fm=baseline_asr, .G=rlang::expr(Genotype), .E=rlang::expr(Env), .M=rlang::expr(density),
+#' # Calculate the (average) root mean square error of prediction (rmsep)
+#' baseline_rmsep <- rmsep_calc(.fm=baseline_asr, .G=rlang::expr(Genotype), .E=rlang::expr(Env), .M=rlang::expr(density),
 #'                   .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
-#' baseline_rmse$Rmse
+#' baseline_rmsep$Rmsep
 #' @export
-rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
+rmsep_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
                       .cores=2, .kn=10, .ecs_in_bline_model=rlang::quos(NULL)){
 
 
@@ -437,10 +437,10 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 
   # Calculate the squared differences between the response variable and the CV predictions
   Resids_cv <- (cv_df[[response_term]] - cv_df$predicted.value)^2
-  # Finally calculate the RMSE between the response variable and the CV predictions
-  Rmse <- sqrt(mean(Resids_cv, na.rm=T))
+  # Finally calculate the RMSEP between the response variable and the CV predictions
+  Rmsep <- sqrt(mean(Resids_cv, na.rm=T))
 
-  return_list <- list(Cor=Cor, Rmse = Rmse, Resids_cv = Resids_cv)
+  return_list <- list(Cor=Cor, Rmsep = Rmsep, Resids_cv = Resids_cv)
   return(return_list)
 }
 
@@ -472,7 +472,7 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' \itemize{
 #'  \item \code{fm}: An updated model with the most important environmental covariate included in the model along with only the significant
 #'  fixed and random effects pertaining to the environmental covariate identified.
-#'  \item \code{rmse}: The value of the RMSE for the updated model.
+#'  \item \code{rmsep}: The value of the RMSEP for the updated model.
 #'  }
 #' @examples
 #' library(asreml)
@@ -494,13 +494,13 @@ rmse_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #'   data = SorghumYield,
 #'   na.action=na.method(x='include'),
 #'   maxit=30, workspace="1Gb")
-#'   ec1_model_asr <- ec_iteration(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreCumRad),
+#'   ec1_model_asr <- ec_iteration(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreFlwEvap),
 #'       G= rlang::expr(Genotype), E = rlang::expr(Env),
 #'       M= rlang::expr(density), trial = rlang::expr(Trial),
 #'       env_cv_df=SorghumCvGroup)
 #' ec1_model_asr$selected_ec
 #' ec1_model_asr$fm$call
-#' ec1_model_asr$rmse
+#' ec1_model_asr$rmsep
 #' @export
 ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL,
                          ecs_in_bline_model=rlang::maybe_missing(), denDF="numeric"){
@@ -640,8 +640,8 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
   }
 
 
-  rmse_curr <- rmse_calc(.fm= curr_fm, .G=G, .E=E, .M=M, .trial=trial, .env_cv_df = env_cv_df,
-                         .cores=ncores, .kn=kn, .ecs_in_bline_model=ecs_in_bline_model)$Rmse
+  rmsep_curr <- rmsep_calc(.fm= curr_fm, .G=G, .E=E, .M=M, .trial=trial, .env_cv_df = env_cv_df,
+                         .cores=ncores, .kn=kn, .ecs_in_bline_model=ecs_in_bline_model)$Rmsep
 
   # Remove cv_group from .df if it exists to stop bugs from happening
   if(length(which(colnames(.df)=="cv_group"))>0){
@@ -662,11 +662,11 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
   continue <- TRUE
   while(continue==TRUE){
 
-    which_selected <- which(ec_summary$RMSE==min(ec_summary$RMSE, na.rm=TRUE))
+    which_selected <- which(ec_summary$RMSEP==min(ec_summary$RMSEP, na.rm=TRUE))
     ec_candid <- ec_summary$EC[which_selected]
-    rmse_candid <- ec_summary$RMSE[which_selected]
-    # If model has improved (i.e. RMSE is lower) than include best EC as a candidate model, then find a parsimonious version of the model
-    if(rmse_candid < rmse_curr){
+    rmsep_candid <- ec_summary$RMSEP[which_selected]
+    # If model has improved (i.e. RMSEP is lower) than include best EC as a candidate model, then find a parsimonious version of the model
+    if(rmsep_candid < rmsep_curr){
 
       ec_candidate <- rlang::parse_expr(ec_candid)
       # First define the model with every EC term for the candidate EC
@@ -681,24 +681,24 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
       # Remove non-significant fixed and random effects for the ECs in the candidate model
       tryCatch({
         candid_fm <- simplify_ec_model(.fm = candid_fm, .ecs_in_model = ecs_in_candidate, .G = rlang::expr_text(G),
-                                       .M = rlang::expr_text(M), denDF = denDF)
+                                       .M = rlang::expr_text(M), denDF = denDF, .kn=kn)
       }, error = function(e) {
         stop("Error during model simplification: ", e$message)
       })
 
       ec_candidate_bl <- rlang::parse_quos(c(ec_bl_terms_char, ec_candid), rlang::current_env())
-      # Calculate the RMSE of the simplified model
+      # Calculate the RMSEP of the simplified model
       tryCatch({
-        rmse_candid <- rmse_calc(.fm = candid_fm, .G = G, .E = E, .M = M, .trial = trial, .env_cv_df = env_cv_df,
-                                 .cores = ncores, .kn = kn, .ecs_in_bline_model = ec_candidate_bl)$Rmse
+        rmsep_candid <- rmsep_calc(.fm = candid_fm, .G = G, .E = E, .M = M, .trial = trial, .env_cv_df = env_cv_df,
+                                 .cores = ncores, .kn = kn, .ecs_in_bline_model = ec_candidate_bl)$Rmsep
       }, error = function(e) {
-        stop("Error during RMSE calculation: ", e$message)
+        stop("Error during RMSEP calculation: ", e$message)
       })
 
-      # If the RMSE for the candidate model is better than the current model, then update the current model to be the candidate model
-      if( rmse_candid < rmse_curr ){
+      # If the RMSEP for the candidate model is better than the current model, then update the current model to be the candidate model
+      if( rmsep_candid < rmsep_curr ){
         curr_fm <- candid_fm
-        rmse_curr <- rmse_candid
+        rmsep_curr <- rmsep_candid
         continue <- FALSE
       } else { # If the candidate EC model is not an improvement, remove that particular EC from the data frame containing the list of candidate ECs
         ec_summary <- ec_summary[-which_selected, ]
@@ -713,7 +713,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
     }
   }
   final_fm <- curr_fm
-  return_list <- list(fm=final_fm, selected_ec=ec_candid, rmse=rmse_curr)
+  return_list <- list(fm=final_fm, selected_ec=ec_candid, rmsep=rmsep_curr)
   return(return_list)
 }
 
@@ -749,7 +749,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
 #' \itemize{
 #'  \item \code{fm}: An updated model with the all of the important environmental covariate included in the model along with only the significant
 #'  fixed and random effect terms pertaining to each environmental covariate identified.
-#'  \item \code{rmse}: The value of the RMSE for the final environmental covariate model
+#'  \item \code{rmsep}: The value of the RMSEP for the final environmental covariate model
 #'  }
 #' @examples
 #' library(asreml)
@@ -772,12 +772,12 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
 #'   na.action=na.method(x='include'),
 #'   maxit=30, workspace="1Gb")
 #' # Expect this next line of code to take 5-10 minutes to run on your machine
-#' ec_model_asr <- ec_all(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreCumRad),
+#' ec_model_asr <- ec_all(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreFlwEvap),
 #'        G= rlang::expr(Genotype), E = rlang::expr(Env),
 #'        M= rlang::expr(density), trial = rlang::expr(Trial),
-#'        env_cv_df=SorghumCvGroup)
+#'        env_cv_df=SorghumCvGroup, kn=6)
 #' ec_model_asr$fm$call
-#' ec_model_asr$rmse
+#' ec_model_asr$rmsep
 #' @export
 ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL, ecs_in_bline_model=rlang::maybe_missing(), denDF="numeric"){
 
@@ -916,12 +916,12 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL
   ecs_in_curr_bl_model <- ecs_in_bline_model
 
 
-  # Run the algorithm for a single iteration to calculate the INITIAL RMSE
+  # Run the algorithm for a single iteration to calculate the INITIAL RMSEP
   tryCatch({
-    curr_rmse <- rmse_calc(.fm = curr_fm, .G = G, .E = E, .M = M, .trial = trial, .env_cv_df = env_cv_df,
-                           .cores = ncores, .kn = kn, .ecs_in_bline_model = ecs_in_bline_model)$Rmse
+    curr_rmsep <- rmsep_calc(.fm = curr_fm, .G = G, .E = E, .M = M, .trial = trial, .env_cv_df = env_cv_df,
+                           .cores = ncores, .kn = kn, .ecs_in_bline_model = ecs_in_bline_model)$Rmsep
   }, error = function(e) {
-    stop("Error during initial RMSE calculation: ", e$message)
+    stop("Error during initial RMSEP calculation: ", e$message)
   })
 
   while(continue_ec_search==TRUE){
@@ -934,11 +934,11 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL
     })
 
     ec_candid_fm <- ec_iter$fm
-    candid_rmse <- ec_iter$rmse
+    candid_rmsep <- ec_iter$rmsep
     # If the model has been has changed, set the current model to be the candidate model, otherwise finish
-    if(candid_rmse < curr_rmse){
+    if(candid_rmsep < curr_rmsep){
       curr_fm <- ec_candid_fm
-      curr_rmse <- candid_rmse
+      curr_rmsep <- candid_rmsep
       # Update the ec terms in the current model #CONTINUE HERE!
       col_candid_ec <- unlist(vars[ec_iter$selected_ec])
       # Update ECs in current (baseline?!) model
@@ -958,9 +958,9 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL
   }
   # Make final model equal to current model
   final_fm <- curr_fm
-  final_rmse <- curr_rmse
+  final_rmsep <- curr_rmsep
 
-  final_list <- list(fm=final_fm, rmse=final_rmse)
+  final_list <- list(fm=final_fm, rmsep=final_rmsep)
   return(final_list)
 }
 

@@ -310,7 +310,7 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M, .kn=10){
         # Update the values of Margin
         tryCatch({
           temp_ec_terms_df$Margin <- margin(terms = temp_ec_terms_df$Term,
-                                            ec = as.character(ec_terms_char[i]), G = .G, M = .M, df = .df)
+                                            ec = as.character(ec_terms_char[i]), G = .G, M = .M, df = .df, .kn=.kn)
         }, error = function(e) {
           stop("Error during margin calculation for random terms: ", e$message)
         })
@@ -323,7 +323,7 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M, .kn=10){
         temp_ec_terms_new_df <- temp_ec_terms_df
         #Update the values of margin
         temp_ec_terms_new_df$Margin <- margin(terms= temp_ec_terms_new_df$Term,
-                                              ec=as.character(ec_terms_char[i]), G=.G, M=.M, df=.df)
+                                              ec=as.character(ec_terms_char[i]), G=.G, M=.M, df=.df, .kn=.kn)
         new_j <- max(temp_ec_terms_df$Margin)
         # If the value of Margin is the same for all model terms after updating, then the model cannot be further improved
         if(sum((temp_ec_terms_new_df$Margin==temp_ec_terms_df$Margin)==FALSE)==0){

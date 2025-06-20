@@ -72,7 +72,7 @@ cv_groups <- function(E, folds = 6) {
 #`%dopar%` <- foreach::`%dopar%`
 #`%do%` <- foreach::`%do%`
 
-#' @title Include an EC into the model and obtain the RMSE
+#' @title Include an EC into the model and obtain the RMSEP
 #' @description
 #' `r lifecycle::badge("experimental")`
 #' This function includes an environment covariate (EC) into the model and then performs k-fold cross validation to obtain predictions
@@ -103,7 +103,7 @@ cv_groups <- function(E, folds = 6) {
 #'  \item \code{Cor}: The Pearson correlation of the predicted values from the baseline model
 #'  compared with the predictions obtained with the environment covariate included in an untested environment.
 #'  The predictions are obtained internally using \code{asreml::predict.asreml}.
-#'  \item \code{Rmse}: the full log-likelihood for each model
+#'  \item \code{Rmsep}: the full log-likelihood for each model
 #'  \item \code{Resids_cv}: The squared differences between the baseline model and the cross-validation predictions for each \code{GxExM} combination
 #'  }
 #' @examples
@@ -126,9 +126,9 @@ cv_groups <- function(E, folds = 6) {
 #'   data = SorghumYield,
 #'   na.action=na.method(x='include'),
 #'   maxit=30, workspace="1Gb")
-#'  ec_rmse_summary <- ec_single(.fm=baseline_asr, .ec=rlang::expr(PrePAW), .G =rlang::expr(Genotype), .E = rlang::expr(Env),
+#'  ec_rmsep_summary <- ec_single(.fm=baseline_asr, .ec=rlang::expr(PrePAW), .G =rlang::expr(Genotype), .E = rlang::expr(Env),
 #'                    .M = rlang::expr(density), .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
-#'  ec_rmse_summary$Rmse
+#'  ec_rmsep_summary$Rmsep
 #'
 #' @export
 ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
@@ -636,10 +636,10 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 
   # Calculate the squared differences between the response variable and the CV predictions
   Resids_cv <- (cv_df[[response_term]] - cv_df$predicted.value)^2
-  # Finally calculate the RMSE between the response variable and the CV predictions
-  Rmse <- sqrt(mean(Resids_cv, na.rm=T))
+  # Finally calculate the RMSEP between the response variable and the CV predictions
+  Rmsep <- sqrt(mean(Resids_cv, na.rm=T))
 
-  return_list <- list(Cor=Cor, Rmse = Rmse, Resids_cv = Resids_cv)
+  return_list <- list(Cor=Cor, Rmsep = Rmsep, Resids_cv = Resids_cv)
   return(return_list)
 }
 
@@ -652,8 +652,8 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' `r lifecycle::badge("experimental")`
 #' This function implements the forward selection procedure for each environmental covariates (EC).
 #' Each EC is incorporate into the model individually and then k-fold cross validation is performed.
-#' Predcitions are then obtained in an untested environment, which are then compared back to the baseline model to obtain an RMSE for each environment.
-#' The EC which minimises the RMSE is selected from the forward selection procedure.
+#' Predcitions are then obtained in an untested environment, which are then compared back to the baseline model to obtain an RMSEP for each environment.
+#' The EC which minimises the RMSEP is selected from the forward selection procedure.
 #' If management practice \code{.M} and the environment covariates \code{.ec} are factors, then the predictions will be for each unique combination of \code{GxExM}.
 #' If \code{.M} is continuous, then predictions will be very for every unique \code{.M} value observed in the multi-environment trial data.
 #'
@@ -675,10 +675,10 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #'
 #' @return A list with components:
 #' \itemize{
-#'  \item \code{ec_selected}: The environmental covariate selected as minimising the RMSE (a scalar of type character).
+#'  \item \code{ec_selected}: The environmental covariate selected as minimising the RMSEP (a scalar of type character).
 #'  compared with the predictions obtained with the environment covariate included in an untested environment.
 #'  The predictions are obtained internally using \code{asreml::predict.asreml}.
-#'  \item \code{summary_ecs}: A data frame with the RMSE and Pearson correlation for each environmental covariate considered during the forward selection procedure.
+#'  \item \code{summary_ecs}: A data frame with the RMSEP and Pearson correlation for each environmental covariate considered during the forward selection procedure.
 #'  }
 #' @examples
 #' library(asreml)
@@ -832,11 +832,11 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
   # Identify which columns in the data frame consist to the ECs to be assessed
   cols <- unlist(purrr::map(quo_ecs, rlang::eval_tidy, vars))
 
-  # Create a data frame to store the RMSE for each EC
+  # Create a data frame to store the RMSEP for each EC
   #ec_df <- data.frame(expr(!!ECs) = unique(df[[E]]))
   ec_df <- data.frame(EC = unique(colnames(df[cols])))
   ec_df$Cor <- NA
-  ec_df$RMSE <- NA
+  ec_df$RMSEP <- NA
 
   for(i in 1:dim(ec_df)[1]){
     ec_curr <- rlang::parse_expr(ec_df$EC[i])
@@ -851,13 +851,13 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
       stop(paste("Error during cross-validation for environmental covariate '", ec_curr, "': ", e$message, sep = ""))
     })
 
-    # Store correlation and RMSE in EC data frame ec_df
+    # Store correlation and RMSEP in EC data frame ec_df
     ec_df$Cor[i] <- ec_cv_temp$Cor
-    ec_df$RMSE[i] <- ec_cv_temp$Rmse
+    ec_df$RMSEP[i] <- ec_cv_temp$Rmse
   }
-  # Identify the EC with the lowest RMSE
+  # Identify the EC with the lowest RMSEP
   # Need to check that 'which' combined with 'min' and 'na.rm=TRUE' does not cause a bug
-  ec_selected <- ec_df$EC[which(ec_df$RMSE == min(ec_df$RMSE,na.rm=TRUE))]
+  ec_selected <- ec_df$EC[which(ec_df$RMSEP == min(ec_df$RMSEP,na.rm=TRUE))]
   return_ecs_list <- list(ec_selected=ec_selected, summary_ecs = ec_df)
   return(return_ecs_list)
 }

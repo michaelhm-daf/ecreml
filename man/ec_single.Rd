@@ -2,7 +2,7 @@
 % Please edit documentation in R/ec_finder.R
 \name{ec_single}
 \alias{ec_single}
-\title{Include an EC into the model and obtain the RMSE}
+\title{Include an EC into the model and obtain the RMSEP}
 \usage{
 ec_single(
   .fm,
@@ -53,7 +53,7 @@ A list with components:
 \item \code{Cor}: The Pearson correlation of the predicted values from the baseline model
 compared with the predictions obtained with the environment covariate included in an untested environment.
 The predictions are obtained internally using \code{asreml::predict.asreml}.
-\item \code{Rmse}: the full log-likelihood for each model
+\item \code{Rmsep}: the full log-likelihood for each model
 \item \code{Resids_cv}: The squared differences between the baseline model and the cross-validation predictions for each \code{GxExM} combination
 }
 }
@@ -84,8 +84,8 @@ baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
   data = SorghumYield,
   na.action=na.method(x='include'),
   maxit=30, workspace="1Gb")
- ec_rmse_summary <- ec_single(.fm=baseline_asr, .ec=rlang::expr(PrePAW), .G =rlang::expr(Genotype), .E = rlang::expr(Env),
+ ec_rmsep_summary <- ec_single(.fm=baseline_asr, .ec=rlang::expr(PrePAW), .G =rlang::expr(Genotype), .E = rlang::expr(Env),
                    .M = rlang::expr(density), .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
- ec_rmse_summary$Rmse
+ ec_rmsep_summary$Rmsep
 
 }

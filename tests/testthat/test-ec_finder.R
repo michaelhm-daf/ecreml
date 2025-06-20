@@ -20,10 +20,6 @@ test_that("cv_groups works", {
 })
 
 
-
-
-
-
 test_that("cv_groups works", {
   # Run baseline model
   baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,

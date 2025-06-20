@@ -52,7 +52,7 @@ A list with 2 components:
 \itemize{
 \item \code{fm}: An updated model with the most important environmental covariate included in the model along with only the significant
 fixed and random effects pertaining to the environmental covariate identified.
-\item \code{rmse}: The value of the RMSE for the updated model.
+\item \code{rmsep}: The value of the RMSEP for the updated model.
 }
 }
 \description{
@@ -80,11 +80,11 @@ baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
   data = SorghumYield,
   na.action=na.method(x='include'),
   maxit=30, workspace="1Gb")
-  ec1_model_asr <- ec_iteration(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreCumRad),
+  ec1_model_asr <- ec_iteration(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreFlwEvap),
       G= rlang::expr(Genotype), E = rlang::expr(Env),
       M= rlang::expr(density), trial = rlang::expr(Trial),
       env_cv_df=SorghumCvGroup)
 ec1_model_asr$selected_ec
 ec1_model_asr$fm$call
-ec1_model_asr$rmse
+ec1_model_asr$rmsep
 }

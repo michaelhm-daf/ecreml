@@ -147,43 +147,8 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
 
 
 # # Write a function to determine the margin (i.e. order of hierarchy)
-# temp_ec_terms_df
-#
-# terms <- str_replace_all(temp_ec_terms_df$Term, "PostPAW","x")
-# terms <- str_replace_all(terms, "density","M")
-# terms <- str_replace_all(terms, "Hybrid","G")
-
-# # This works
-# test <- margin(terms = temp_ec_terms_df$Term, ec="PostPAW", G="Hybrid", M="density")
-# test
-#
-# # This does not work for some reason
-# margin(terms = temp_ec_terms_df$Term,
-#        ec=ec_terms_char[i], G=.G, M=.M)
-#
-# ec_terms_char[i] <- "PostPAW"
-# # This does not work for some reason???
-# margin(terms = temp_ec_terms_df$Term,
-#        ec=ec_terms_char[i], G=.G, M=.M)
-#
-#
-# margin(terms = temp_ec_terms_df$Term,
-#        ec=ec_terms_char[i], G="Hybrid", M="density")
-#
-#
-# # Compare with known results
-# temp_ec_terms_df$Margin
-#
-# i <- 1
-#
-# ec_terms_char[i] <- "PostPAW"
-# terms <- c("spl(x, k = 6)","M:spl(x, k = 6)","spl(x, k = 6):G","M:spl(x, k = 6):G","spl(M, k = 6):x","spl(M, k = 6):x:G","spl(M, k = 6):spl(x, k = 6)","spl(M, k = 6):spl(x, k = 6):G")
-# ec=ec_terms_char[i]
-# terms <- str_replace_all(terms, ec,"x")
-
-
 # algorithm
-#Start with the most complex term (set to i)
+# Start with the most complex term (set to i)
 # If current margin value is the same, Assess whether every preceding term is nested within it,
 # If there is a term which is nested within im repeat for for all i in reverse until i=2
 # At the end subtract min(margin_value) from all terms so that the starting value is 1

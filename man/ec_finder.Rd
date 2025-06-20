@@ -46,18 +46,18 @@ An example is when each TOS within a trial constitutes an environment for the pu
 \value{
 A list with components:
 \itemize{
-\item \code{ec_selected}: The environmental covariate selected as minimising the RMSE (a scalar of type character).
+\item \code{ec_selected}: The environmental covariate selected as minimising the RMSEP (a scalar of type character).
 compared with the predictions obtained with the environment covariate included in an untested environment.
 The predictions are obtained internally using \code{asreml::predict.asreml}.
-\item \code{summary_ecs}: A data frame with the RMSE and Pearson correlation for each environmental covariate considered during the forward selection procedure.
+\item \code{summary_ecs}: A data frame with the RMSEP and Pearson correlation for each environmental covariate considered during the forward selection procedure.
 }
 }
 \description{
 \ifelse{html}{\href{https://lifecycle.r-lib.org/articles/stages.html#experimental}{\figure{lifecycle-experimental.svg}{options: alt='[Experimental]'}}}{\strong{[Experimental]}}
 This function implements the forward selection procedure for each environmental covariates (EC).
 Each EC is incorporate into the model individually and then k-fold cross validation is performed.
-Predcitions are then obtained in an untested environment, which are then compared back to the baseline model to obtain an RMSE for each environment.
-The EC which minimises the RMSE is selected from the forward selection procedure.
+Predcitions are then obtained in an untested environment, which are then compared back to the baseline model to obtain an RMSEP for each environment.
+The EC which minimises the RMSEP is selected from the forward selection procedure.
 If management practice \code{.M} and the environment covariates \code{.ec} are factors, then the predictions will be for each unique combination of \code{GxExM}.
 If \code{.M} is continuous, then predictions will be very for every unique \code{.M} value observed in the multi-environment trial data.
 }
