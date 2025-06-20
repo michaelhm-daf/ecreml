@@ -135,10 +135,6 @@ It is important that any additional terms that capture unexplained field variabi
 For more details on how to use `asreml` specifically, see the `asreml` reference manual [@VSNi2025]. For more details on included additional terms into `asreml` to adjust for spatial field trends, see @Gilmour1997.
 :::
 
-
-
-
-
 ## ec_single
 
 The `ec_single()` function takes the baseline model as the input, as well as a single EC to include in the model, in order to perform $k$-fold cross validation procedure described in @Mumford2023. The output of the `ec_single()` function is the root mean square error of prediction (RMSEP), which provides an indication of how well the candidate EC predicts performance in an 'untested' or future environment. In the flow chart described in @fig-ecFlowChart, the `ec_single()` function implements the part of the algorithm outlined in @fig-ecSingleImage. 
@@ -223,7 +219,7 @@ A subset of the algorithm outlined in @fig-ecFlowChart that the `ec_finder()` fu
 
 Below is an example of using the `ec_finder()` function to identify which of three provided ECs results in the lowest RMSEP during the during the cross-validation forward selection procedure. Note how `ec_finder()` is flexible in that you can specify ECs either using the colon (`:`) operator or separated by a comma (`,`), enabling are numerous ECs to be input succinctly.
 
-```{r ec-finder, eval=FALSE, include=TRUE , message=FALSE, warning=FALSE, results="markup"}
+```{r ec-finder, eval=TRUE, include=TRUE , message=FALSE, warning=FALSE, results="hide"}
 ec_search <- ec_finder(fm = baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreFlwEvap),
     G = rlang::expr(Genotype), E = rlang::expr(Env),
     M = rlang::expr(TargetPop), trial = rlang::expr(Trial),
@@ -232,7 +228,7 @@ ec_search <- ec_finder(fm = baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreF
 
 The two main outputs from `ec_finder()` include a summary data frame of the RMSEP for each EC listed, as well as an output indicating which EC resulted in the lowest RMSEP during the forward selection procedure.
 
-```{r ec-finder-results, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
+```{r ec-finder-results, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
 ec_search$summary_ecs
 ec_search$ec_selected
 ```
@@ -261,7 +257,7 @@ The overall backwards selection procedure is performed using the `simplify_ec_mo
 
 We will now demonstrate the backwards selection procedure using the motivating data and assuming that `PostPAW` was identified as the most important EC during the forward selection procedure. It is good to start by using `ec_full_model_constructor()` to update the baseline model to include all linear and non-linear `spl()` terms for `PostPAW`
 
-```{r postpaw-full, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
+```{r postpaw-full, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
 postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), 
                                                .G=rlang::expr(Genotype), .M=rlang::expr(TargetPop))
 
@@ -269,19 +265,19 @@ postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr
 
 We can see what the updated full model looks like with `PostPAW` included in the model.
 
-```{r postpaw-full-call, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
+```{r postpaw-full-call, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
 postPAW_full_asr$call
 ```
 
 To remove any unimportant random effects from the model pertaining to `PostPAW`, we can run `ec_random_model()`.
 
-```{r postpaw-random, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
+```{r postpaw-random, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
 random_simplify_asr <- ec_random_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="TargetPop")
 ```
 
 To see what the simplified random effects model looks like, we can then run `random_simplify_asr$call`
 
-```{r postpaw-random-call, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
+```{r postpaw-random-call, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
 random_simplify_asr$call
 ```
 
@@ -295,13 +291,13 @@ Note that the 2nd order interaction terms `TargetPop:spl(PostPAW)` and `spl(Post
 
 Once the random effects model has been simplified, we can then look to remove any non-significant EC terms that are in the fixed effects component of the model using the function `ec_fixed_model()`. This function uses a Wald test to assess the significance of fixed effect ECs
 
-```{r postpaw-fixed, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
+```{r postpaw-fixed, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
 fixed_simplify_asr <- ec_fixed_model(.fm=random_simplify_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="TargetPop")
 ```
 
 Note that the corresponding linear term for an EC in the fixed effects model should only be dropped from the model if the corresponding spline term is non-significant (@Verbyla2019). For example, since the term `TargetPop:spl(PostPAW):Genotype` has been dropped from the random effects part of the model, the corresponding linear term `TargetPop:PostPAW:Genotype` may also be removed from the model. Conversely, since the `TargetPop:spl(PostPAW)` term is still in the model, we cannot drop the linear term `TargetPop:PostPAW`, regardless of whether the term is statistically significant as per the Wald test. The function `ec_fixed_model()` is designed with this in mind and will ensure that non-significant linear EC terms are only dropped from the model when the corresponding `spl()` term is absent in the model.
 
-```{r postpaw-fixed-call, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
+```{r postpaw-fixed-call, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
 fixed_simplify_asr$call
 ```
 
@@ -310,13 +306,13 @@ In the updated model, the term `TargetPop:PostPAW:Genotype` has been dropped fro
 To remove the hassle of having the repeatedly call `ec_random_model()` and `ec_fixed_model()`, you can instead call the function `simplify_ec_model()` which will automatically iterate between `random_simplify_asr()` and `fixed_simplify_asr()` internally until the EC model can no longer be simplified.
 
 
-```{r postpaw-simplify, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
+```{r postpaw-simplify, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
 simplify_asr <- simplify_ec_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="TargetPop")
 ```
 
 Looking at the `asreml` model in `simplify_asr$call`, we can see that indeed the EC model for `PostPAW` cannot be simplified any further.
 
-```{r postpaw-simplify-call, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
+```{r postpaw-simplify-call, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
 simplify_asr$call
 ```
 
@@ -375,7 +371,7 @@ EC_1_density
 Similarly, the G$\times$EC interaction indicates that the yield response curve to `PostPAW` differs for each genotype. We can graph the non-linear yield response to `PostPAW` for each genotype using `predict.asreml()`.
 
 ::: {#fig-postPawGenotypePlot}
-```{r, eval=FALSE, include=TRUE , message=FALSE, warning=FALSE, results="hide", fig.width=7, fig.height=7, out.width='100%'}
+```{r, eval=TRUE, include=TRUE , message=FALSE, warning=FALSE, results="hide", fig.width=7, fig.height=7, out.width='100%'}
 
 # Load required graphics packages
 library(tidyverse)
@@ -425,7 +421,7 @@ Predicted values generated from `predict.asreml()` for the Genotype$\\times$`Pos
 
 One important thing to note is that by default, the Wald test for the fixed effects assumes that the denominator degrees of freedom for testing of the EC fixed effect terms is large. This is appropriate when the number of environments in the MET data is large. For a smaller number of environments (<20), I would strongly recommend using the setting `denDF="numeric"` in `ec_fixed_model()`. Setting `denDF="numeric"` will tell `asreml` to estimate the denominator degrees of freedom using the method of @Kenward1997, in order to obtain correct $p$-values for testing significance of EC fixed effects.
 
-```{r postpaw-fixed-kr, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
+```{r postpaw-fixed-kr, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
 fixed_simplify_asr <- ec_fixed_model(.fm=random_simplify_asr, .ecs_in_model=rlang::quos(PostPAW), 
                                      .G="Genotype", .M="TargetPop", denDF="numeric")
 ```
@@ -449,7 +445,7 @@ A subset of the algorithm outlined in @fig-ecFlowChart that `ec_iteration` funct
 :::
 The `ec_iteration()` function is demonstrated on the motivating data set below for a subset of three ECs being `PrePAW`, `PostPAW`, and pre-flowering evapotranspiration (`PreFlwEvap`).
 
-```{r ec-iteration, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
+```{r ec-iteration, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
 ec1_model_asr <- ec_iteration(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreFlwEvap),
       G= rlang::expr(Genotype), E = rlang::expr(Env),
       M= rlang::expr(TargetPop), trial = rlang::expr(Trial),
@@ -460,19 +456,19 @@ ec1_model_asr <- ec_iteration(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW,
 
 The `ec_iteration()` function returns three outputs in a list. The first output is a character displaying the EC that was selected from the set of ECs provided using the `EC` input using the forward selection procedure.
 
-```{r ec-iteration-selected-ec, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
+```{r ec-iteration-selected-ec, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
 ec1_model_asr$selected_ec
 ```
 
 The second output is the parsimonious `asreml` model obtained after running the backwards selection procedure
 
-```{r ec-iteration-call, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
+```{r ec-iteration-call, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
 ec1_model_asr$fm$call
 ```
 
 The third output is the RMSEP of the current model after performing both the forward and backwards selection procedures.
 
-```{r ec-iteration-rmsep, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
+```{r ec-iteration-rmsep, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
 ec1_model_asr$rmsep
 ```
 
@@ -482,7 +478,7 @@ ec1_model_asr$rmsep
 The `ec_all()` function performs the entire subset selection algorithm described in @fig-ecFlowChart by searching for multiple ECs to include in the model, as opposed to `ec_iteration()` which includes only a single additional EC in the model. Note that running `ec_all()` make take a long time, especially if there are a large number of ECs being considered. 
 
 
-```{r ec-all, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
+```{r ec-all, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="hide"}
 ec_model_asr <- ec_all(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreFlwEvap),
        G= rlang::expr(Genotype), E = rlang::expr(Env),
        M= rlang::expr(TargetPop), trial = rlang::expr(Trial),
@@ -491,7 +487,7 @@ ec_model_asr <- ec_all(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreFlw
 
 Similar to `ec_iteration()`, the outputs for `ec_all()` include a final model after all ECs have been considered, as well as the RMSEP for the final model. 
 
-```{r ec-all-call, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
+```{r ec-all-call, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
 ec_model_asr$fm$call
 ec_model_asr$rmsep
 ```
@@ -505,7 +501,7 @@ Another interesting thing to note is that in the full model, all of the terms co
 
 It is important to emphasise that this is a simplified example in the sense that we have only considered three ECs. Exploration of the variances of the outputted model indicate that there is still a lot of the E component that is unexplained by `PostPAW` and `PrePAW`. This can be seen by the fact the variance components for the `Env` and `Trial` 'lack-of-fit' terms are still relatively large.
 
-```{r ec-all-varcomp, eval=FALSE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
+```{r ec-all-varcomp, eval=TRUE, include = TRUE , message=FALSE, warning=FALSE, results="markup"}
 summary(ec_model_asr$fm)$varcomp
 ```
 
