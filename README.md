@@ -16,7 +16,7 @@ al. (2023)](https://www.sciencedirect.com/science/article/pii/S037842902300326X
 which incorporates environmental covariates (ECs) into a
 multi-environment trial (MET) analysis to better understand the
 environmental drivers contributing to the genotype $\times$ environment
-$\times$ management practice (G$\times$E$\times$M) interaction. The
+$\times$ management practice (G $\times$ E $\times$ M) interaction. The
 overall aim of the `ecreml` `R`-package is to make it as easy as
 possible for scientists to implement the statistical methodology for
 their own MET data.
