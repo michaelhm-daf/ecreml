@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# ecreml
+# ecreml R-package
 
 <!-- badges: start -->
 
@@ -9,7 +9,17 @@
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 <!-- badges: end -->
 
-The goal of ecreml is to …
+The `ecreml` `R`-package consists of a series of functions to aid
+agricultural scientists and data analysts implement the statistical
+methodology described in [Mumford et
+al. (2023)](https://www.sciencedirect.com/science/article/pii/S037842902300326X),
+which incorporates environmental covariates (ECs) into a
+multi-environment trial (MET) analysis to better understand the
+environmental drivers contributing to the genotype $\times$ environment
+$\times$ management practice (G$\times$E$\times$M) interaction. The
+overall aim of the `ecreml` `R`-package is to make it as easy as
+possible for scientists to implement the statistical methodology for
+their own MET data.
 
 ## Installation
 
@@ -17,39 +27,7 @@ You can install the development version of ecreml from
 [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("pak")
-pak::pak("michaelhm-daf/ecreml")
+# install.packages("remotes")
+remotes::install_github("michaelhm-daf/ecreml", build_vignettes = TRUE)
+
 ```
-
-## Example
-
-This is a basic example which shows you how to solve a common problem:
-
-``` r
-library(ecreml)
-## basic example code
-```
-
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
-
-``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
-```
-
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date. `devtools::build_readme()` is handy for this.
-
-You can also embed plots, for example:
-
-<img src="man/figures/README-pressure-1.png" width="100%" />
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub and CRAN.
