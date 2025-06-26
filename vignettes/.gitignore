@@ -1,2 +1,6 @@
-*.html
 *.R
+*.png
+*.bib
+*.log
+*.csl
+*.css

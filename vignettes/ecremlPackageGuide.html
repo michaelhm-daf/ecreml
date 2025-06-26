@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.555">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Michael Mumford">
+<meta name="dcterms.date" content="2025-06-26">
+
+<title>ecreml R-Package Guide</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="ecremlPackageGuide_files/libs/clipboard/clipboard.min.js"></script>
+<script src="ecremlPackageGuide_files/libs/quarto-html/quarto.js"></script>
+<script src="ecremlPackageGuide_files/libs/quarto-html/popper.min.js"></script>
+<script src="ecremlPackageGuide_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="ecremlPackageGuide_files/libs/quarto-html/anchor.min.js"></script>
+<link href="ecremlPackageGuide_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="ecremlPackageGuide_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="ecremlPackageGuide_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="ecremlPackageGuide_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="ecremlPackageGuide_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">ecreml R-Package Guide</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Michael Mumford </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">June 26, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction" class="level2">
+<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
+<p>The <code>ecreml</code> <code>R</code>-package consists of a series of functions to aid agricultural scientists and data analysts implement the statistical methodology described in <span class="citation" data-cites="Mumford2023">Mumford et al. (<a href="#ref-Mumford2023" role="doc-biblioref">2023</a>)</span>, which incorporates environmental covariates (ECs) into a multi-environment trial (MET) analysis to better understand the environmental drivers contributing to the genotype <span class="math inline">\(\times\)</span> environment <span class="math inline">\(\times\)</span> management practice (G<span class="math inline">\(\times\)</span>E<span class="math inline">\(\times\)</span>M) interaction. The overall aim of the <code>ecreml</code> <code>R</code>-package is to make it as easy as possible for scientists to implement the statistical methodology for their own MET data. This vignette is focused on guiding the user through the core functionality of the <code>ecreml</code> <code>R</code>-package. Users can automate the entirety of the algorithm, or explore components of the methodology through individual functions.</p>
+<p>Despite the focus being to make the methodology as easy to implement, the <code>ecreml</code> <code>R</code>-package does require scientists to have a strong understanding of linear mixed models. This is because the identification of ECs is an incredibly complex statistical challenge. Additionally, it poses practical challenges too, as the robust identification of ECs requires a large number of field trials (a financially expensive task!) in order to begin to make valid inference on EC effects across a target population of environments. Thus, in order to minimise the number of trials (i.e.&nbsp;environments) required for valid inference, it is necessary to use state-of-the-art statistical methods to correctly partition EC effects from noise/variability, as well as partitioning EC effects from other potential factors such as genotype (G) or management practice (M) effects. This is achieved by the user providing a correctly specified ‘baseline’ model in the form of a linear mixed model fitted using <code>asreml</code>. The detection of important ECs is then performed by the <code>ecreml R</code>-package.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+ASReml Installation
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>The <code>ecreml R</code>-package will also require users to be proficient in using the <code>asreml</code> <code>R</code>-package, which requires a commercial software license from <a href="https://vsni.co.uk/software/asreml-r/">VSNi</a>. Note that you will need the latest version of the <code>asreml</code> <code>R</code>-package installed (<span class="math inline">\(\ge 4.2.0.372\)</span>), in order for the <code>ecreml</code> package to function correctly.</p>
+</div>
+</div>
+</div>
+<p>The subset selection algorithm to identify important ECs can be summarised in the flow chart below, which is taken from <a href="#fig-ecFlowChart" class="quarto-xref">Figure&nbsp;1</a> of <span class="citation" data-cites="Mumford2023">Mumford et al. (<a href="#ref-Mumford2023" role="doc-biblioref">2023</a>)</span>. The proposed methodology can be thought of as being somewhat analogous to a genome-wide association study (GWAS) which attempts to better explain the genetic (G) component of the G<span class="math inline">\(\times\)</span>E<span class="math inline">\(\times\)</span>M interaction using genotypic covariates such as markers or quantitative trait loci (QTLs). The difference being that instead of the G component, we are attempting to explain the environment (E) component through EC data.</p>
+<div id="fig-ecFlowChart" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ecFlowChart-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ecFlowChart.png" class="img-fluid figure-img" style="width:100.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ecFlowChart-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: A diagram from <span class="citation" data-cites="Mumford2023">Mumford et al. (<a href="#ref-Mumford2023" role="doc-biblioref">2023</a>)</span> of the overall algorithm used to implement the methodology that incorporates environmental covariates into the multi-environment trial analysis which explores genotype<span class="math inline">\(\times\)</span>environment<span class="math inline">\(\times\)</span>management practice interaction effects.
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="baseline-model" class="level2">
+<h2 class="anchored" data-anchor-id="baseline-model">Baseline model</h2>
+<p>Before ECs are incorporated into the model via the <code>ecreml</code> <code>R</code>-package, it is important that the correct baseline model is fitted. The baseline model can be simply thought of as the model that captures G, E and M effects without the inclusion of ECs. Therefore, the E term in the baseline model can be interpreted as collectively capturing the effect of all important ECs.</p>
+<p>Throughout this vignette, we are going to use the motivating sorghum agronomy data set described in <span class="citation" data-cites="Mumford2023">Mumford et al. (<a href="#ref-Mumford2023" role="doc-biblioref">2023</a>)</span> which is included in the <code>ecreml</code> <code>R</code>-package.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load required R packages</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(asreml)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ecreml)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(foreach)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rlang)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(SorghumYield)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The key things to note about the motivating data set are:</p>
+<ul>
+<li>6 trials <span class="math inline">\(\times\)</span> 2-3 times of sowing (TOS) <span class="math inline">\(\times\)</span> 4 target plant populations</li>
+<li>Each trial has either a split-plot or split-split-plot design</li>
+<li>Environment is the combination of trial and TOS (total 17 environments)</li>
+<li>Response variable of interest is total grain yield (t/ha)</li>
+</ul>
+<p>The baseline model for this data set fitted using <code>asreml</code> is:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>baseline_asr <span class="ot">&lt;-</span> <span class="fu">asreml</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">fixed =</span> Yld <span class="sc">~</span> Genotype <span class="sc">+</span> TargetPop <span class="sc">+</span> Genotype<span class="sc">:</span>TargetPop,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">random =</span><span class="sc">~</span> <span class="fu">at</span>(Trial)<span class="sc">:</span>Rep  <span class="sc">+</span> <span class="fu">at</span>(Trial)<span class="sc">:</span>MainPlot <span class="sc">+</span> </span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>   <span class="fu">at</span>(Trial,<span class="fu">c</span>(<span class="st">'Breeza 1'</span>, <span class="st">'Breeza 2'</span>, <span class="st">'Emerald'</span>, <span class="st">'Moree'</span>))<span class="sc">:</span>SubPlot <span class="sc">+</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>   Trial <span class="sc">+</span> Trial<span class="sc">:</span>Genotype <span class="sc">+</span> Trial<span class="sc">:</span>Genotype<span class="sc">:</span>TargetPop <span class="sc">+</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>   Env <span class="sc">+</span> Env<span class="sc">:</span>Genotype <span class="sc">+</span> Env<span class="sc">:</span>Genotype<span class="sc">:</span>TargetPop,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">residual=</span><span class="sc">~</span> <span class="fu">dsum</span>(<span class="sc">~</span>units<span class="sc">|</span>Env),</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> SorghumYield)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Technical details - baseline model
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>It is assumed that the scientist using the <code>ecreml</code> package is proficient with <code>asreml</code> and linear mixed models and can thus can understand why each of the terms in the baseline model above are necessary. Some key things to note:</p>
+<ul>
+<li>the <code>dsum(~units|Env)</code> term fits a unique residual variance to each environment (i.e.&nbsp;trial <span class="math inline">\(\times\)</span> TOS combination).</li>
+<li>The terms <code>Rep</code> and <code>MainPlot</code> are the experimental design terms related to the split-plot design.</li>
+<li>The term <code>SubPlot</code> is also a design term, but is only required for trials which had a split-split plot design. The <code>at()</code> function within <code>asreml</code> enables us to explicitly state which environments the <code>SubPlot</code> variance component should be estimated for.</li>
+<li>To ensure <code>asreml</code> can correctly determine the experimental design for each trial, the E component is partitioned into a trial (i.e <code>Trial</code>) and TOS within trial <code>Env</code> component.
+<ul>
+<li>This would not be necessary if each trial consisted of a single TOS.</li>
+</ul></li>
+<li>G and M, and G<span class="math inline">\(\times\)</span>M are fitted as <code>fixed</code> effects.</li>
+<li>The terms corresponding to E, G<span class="math inline">\(\times\)</span>E, E<span class="math inline">\(\times\)</span>M, and G<span class="math inline">\(\times\)</span>E<span class="math inline">\(\times\)</span>M are fitted as <code>random</code> effects.</li>
+</ul>
+<p>For demonstrative purposes, the baseline model described above is different to the baseline model fitted in <span class="citation" data-cites="Mumford2023">Mumford et al. (<a href="#ref-Mumford2023" role="doc-biblioref">2023</a>)</span> in two key ways:</p>
+<ul>
+<li>The M component <code>TargetPop</code> is target plant density instead of established plant density, and is fitted as a categorical variable.</li>
+<li>Additional terms to account for spatial field trend have been omitted.</li>
+</ul>
+<p>It is important that any additional terms that capture unexplained field variability are also included in the baseline model to ensure that treatment effects can be disentangled from spatial field variability. Otherwise the identified important ECs could be confounded with spatial field trend.</p>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-3-contents" aria-controls="callout-3" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+ASReml Notes
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-3" class="callout-3-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>For more details on how to use <code>asreml</code> specifically, see the <code>asreml</code> reference manual <span class="citation" data-cites="VSNi2025">(<a href="#ref-VSNi2025" role="doc-biblioref">The VSNi Team, 2025</a>)</span>. For more details on included additional terms into <code>asreml</code> to adjust for spatial field trends, see <span class="citation" data-cites="Gilmour1997">Gilmour, Cullis and Verbyla (<a href="#ref-Gilmour1997" role="doc-biblioref">1997</a>)</span>.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="ec_single" class="level2">
+<h2 class="anchored" data-anchor-id="ec_single">ec_single</h2>
+<p>The <code>ec_single()</code> function takes the baseline model as the input, as well as a single EC to include in the model, in order to perform <span class="math inline">\(k\)</span>-fold cross validation procedure described in <span class="citation" data-cites="Mumford2023">Mumford et al. (<a href="#ref-Mumford2023" role="doc-biblioref">2023</a>)</span>. The output of the <code>ec_single()</code> function is the root mean square error of prediction (RMSEP), which provides an indication of how well the candidate EC predicts performance in an ‘untested’ or future environment. In the flow chart described in <a href="#fig-ecFlowChart" class="quarto-xref">Figure&nbsp;1</a>, the <code>ec_single()</code> function implements the part of the algorithm outlined in <a href="#fig-ecSingleImage" class="quarto-xref">Figure&nbsp;2</a>.</p>
+<div id="fig-ecSingleImage" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ecSingleImage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ec_single.png" class="img-fluid figure-img" style="width:100.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ecSingleImage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: The subset of the algorithm outlined in <a href="#fig-ecFlowChart" class="quarto-xref">Figure&nbsp;1</a> that the <code>ec_single()</code> function implements within the <code>ecreml</code> <code>R</code>-package.
+</figcaption>
+</figure>
+</div>
+<p>In additional to <code>ec_single()</code> requiring the baseline model (<code>.fm</code>) and EC (<code>.ec</code>) as inputs, it is also necessary to provide the <code>.G</code>, <code>.E</code> and <code>.M</code> options so that <code>ecreml</code> can correctly identify which terms in the baseline <code>asreml</code> model correspond to G, E, and M respectively. Currently this input needs to be provided as an R expression which is admittedly cumbersome. This will be fixed in a future version of the <code>ecreml</code> package.</p>
+<p>Suppose we want to explore the predictive performance of the model if we were to include the EC pre-flowering plant available water (<code>PrePAW</code>) into the baseline model for the sorghum data described previously.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(SorghumCvGroup)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>prePAW_rmsep_asr <span class="ot">&lt;-</span> <span class="fu">ec_single</span>(<span class="at">.fm=</span>baseline_asr, <span class="at">.ec=</span><span class="fu">expr</span>(PrePAW), <span class="at">.G =</span><span class="fu">expr</span>(Genotype), <span class="at">.E =</span> <span class="fu">expr</span>(Env),</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                   <span class="at">.M =</span> <span class="fu">expr</span>(TargetPop), <span class="at">.trial=</span> <span class="fu">expr</span>(Trial), <span class="at">.env_cv_df=</span>SorghumCvGroup)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The <code>ec_single()</code> function does a number of things underneath the hood. First, it updates the baseline model to include fixed effect terms for the EC main effect, as well as the G<span class="math inline">\(\times\)</span>EC, EC<span class="math inline">\(\times\)</span>M, and G<span class="math inline">\(\times\)</span>EC<span class="math inline">\(\times\)</span>M interaction effects. If the EC is a continuous variable, this will correspond to a linear regression involving the EC. If the EC is continuous, the <code>ec_single()</code> function will also include a random effect spline term denoted <code>spl(EC)</code>. This spline term enables us to capture any non-linear trait (i.e.&nbsp;yield in the sorghum data) response to the EC being included in the model <span class="citation" data-cites="Verbyla1999">(<a href="#ref-Verbyla1999" role="doc-biblioref">Verbyla et al., 1999</a>)</span>.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-4-contents" aria-controls="callout-4" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Technical notes - smoothing splines
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-4" class="callout-4-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>The implementation of <code>spl()</code> terms within <code>asreml</code> is commonly referred to as the linear mixed model representation of the natural cubic smoothing spline <span class="citation" data-cites="Verbyla1999">Verbyla et al. (<a href="#ref-Verbyla1999" role="doc-biblioref">1999</a>)</span>. For more details on the implementation of natural cubic smoothing splines in <code>asreml</code>, the reader is recommended to review <span class="citation" data-cites="Verbyla1999">Verbyla et al. (<a href="#ref-Verbyla1999" role="doc-biblioref">1999</a>)</span>, <span class="citation" data-cites="Verbyla2018">Verbyla et al. (<a href="#ref-Verbyla2018" role="doc-biblioref">2018</a>)</span>, <span class="citation" data-cites="Green1993">Green and Silverman (<a href="#ref-Green1993" role="doc-biblioref">1993</a>)</span>, and Chapter 11 of <span class="citation" data-cites="Fitzmaurice2008">Fitzmaurice et al. (<a href="#ref-Fitzmaurice2008" role="doc-biblioref">2008</a>)</span>. In practice, it is important to be aware that the specific implementation of cubic smoothing splines in <code>asreml</code> means that a continuous EC can be partitioned into a linear component (<code>EC</code>) and a non-linear component (<code>spl(EC)</code>). Moreover, there is a linear and non-linear EC component for all main and interaction effects. For example, the G<span class="math inline">\(\times\)</span>EC interaction effect can be partitioned into a linear G<span class="math inline">\(\times\)</span>EC component in the <code>asreml</code> model, denoted <code>G:EC</code> and a non-linear component denoted <code>G:spl(EC)</code>.</p>
+<p>Another thing to be aware of is that fitting the splines with too few knot points can result in under-smoothing of the non-linear EC effects. The default number of knot points in <code>ecreml</code> is 10 and can be modified in most <code>ecreml</code> functions by modifying the <code>kn</code> input. When in doubt, we would always recommend having too many knot points rather than too few knot points. We would never recommend fitting a <code>spl()</code> with less than 6 knot points in <code>ecreml</code>. Finally, the use of smoothing splines assumes that the trait (e.g.&nbsp;yield) response to an EC is smooth. When the trait response to a particular EC is not expected to be smooth biologically, then we do not recommend using <code>ecreml</code> to capture the non-linear response to that particular EC. For a more general introduction to smoothing splines, readers are recommended to review <span class="citation" data-cites="Wood2017">Wood (<a href="#ref-Wood2017" role="doc-biblioref">2017</a>)</span>.</p>
+</div>
+</div>
+</div>
+<p>A useful utility function included in <code>ecreml</code> is the <code>ec_full_model_constructor()</code> function. This function takes the baseline (or current) model and reruns <code>asreml</code> with the included EC, including all linear and non-linear terms for that particular EC.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>prePAW_full_asr <span class="ot">&lt;-</span>  <span class="fu">ec_full_model_constructor</span>(<span class="at">.fm=</span>baseline_asr, <span class="at">.ec=</span>rlang<span class="sc">::</span><span class="fu">expr</span>(PrePAW), <span class="at">.G=</span>rlang<span class="sc">::</span><span class="fu">expr</span>(Genotype), <span class="at">.M=</span>rlang<span class="sc">::</span><span class="fu">expr</span>(TargetPop))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The exact terms included in the updated <code>asreml</code> model can be identified by running <code>$call</code> on the <code>asreml</code> model object.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>prePAW_full_asr<span class="sc">$</span>call</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; asreml::asreml(fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop + </span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     PrePAW + TargetPop:PrePAW + PrePAW:Genotype + TargetPop:PrePAW:Genotype, </span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     random = ~at(Trial):Rep + at(Trial):MainPlot + at(Trial, </span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         c("Breeza 1", "Breeza 2", "Emerald", "Moree")):SubPlot + </span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         Trial + Trial:Genotype + Trial:Genotype:TargetPop + Env + </span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         Env:Genotype + Env:Genotype:TargetPop + spl(PrePAW, k = 10) + </span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         TargetPop:spl(PrePAW, k = 10) + spl(PrePAW, k = 10):Genotype + </span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         TargetPop:spl(PrePAW, k = 10):Genotype, residual = ~dsum(~units | </span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;         Env), na.action = asreml::na.method(x = "include"), data = .df, </span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     aom = T, maxit = 300)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Note that the number of knot points for the spline terms in the model in <code>asreml</code> is set to <code>k=10</code> by default. This can be set within the <code>ecreml</code> <code>R</code>-Package using the <code>.kn</code> input. Reducing the number of knot points in the spline terms will increase the computational speed but reduce the accuracy in capturing the non-linear EC response. The default <code>.kn=10</code> has been chosen as a balance between these two competing interests. It is not recommended to set the number of knot points any lower than <code>.kn=6</code> for any <code>spl()</code> terms in the model.</p>
+<p>After running <code>ec_single()</code>, the function fits the full <code>asreml</code> model for a single EC. It then performs <span class="math inline">\(k\)</span>-fold cross-validation underneath the hood such that the groupings of environments to folds/groups/clusters can be pre-specified in the <code>ec_single()</code> input data frame <code>.env_cv_df</code>. The name for the column specifying the groups needs to called <code>$cv_group</code>. For the motivating data, this is specified in the data frame <code>SorghumCvGroup</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>SorghumCvGroup</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;                    Env    Trial cv_group</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1  Breeza 1 06/09/2018 Breeza 1        1</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2  Breeza 1 17/09/2018 Breeza 1        1</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3  Breeza 1 23/10/2018 Breeza 1        1</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4  Breeza 2 03/09/2018 Breeza 2        2</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5  Breeza 2 18/09/2018 Breeza 2        2</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6  Breeza 2 16/10/2018 Breeza 2        2</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7   Emerald 26/07/2018  Emerald        3</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 8   Emerald 16/08/2018  Emerald        3</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 9     Moree 08/08/2018    Moree        4</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 10    Moree 12/09/2018    Moree        4</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 11    Moree 27/09/2018    Moree        4</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 12    Surat 08/08/2018    Surat        5</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 13    Surat 28/08/2018    Surat        5</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 14    Surat 24/01/2019    Surat        5</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 15    Warra 27/07/2018    Warra        6</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 16    Warra 19/10/2018    Warra        6</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 17    Warra 09/11/2018    Warra        6</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In this instance, the cross-validation groupings are such that each trial is a unique cross-validation group. This results in environments within groups being more likely to be similar, and environments across groups being more disparate. When there are a small number of environments in the MET data, grouping in this manner should in theory result in cross validation predicted values being a better reflection of the true predictive performance in an untested or future environment.</p>
+<p>It is important that when providing the <code>.env_cv_df</code> input in <code>ec_single()</code> that the column headings for E and trial match those of <code>.E</code> and <code>.trial</code> in <code>ec_single()</code> respectively. If grouping of environments for cross-validation are not provided to <code>ec_single()</code>, the default is to generate the <span class="math inline">\(k\)</span> folds/groups randomly using the <code>cv_groups()</code> function.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-5-contents" aria-controls="callout-5" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Side note - cross validation
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-5" class="callout-5-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>In initial testing, we have found that the random assignment of environments to groups has resulted in larger variability in the RMSEP than what we were anticipating when developing the methodology. This may cause issues later on where the random allocation of environments to folds/groups results in different ECs are identified as being important. Hence, at this stage, it is recommended to pre-assign the environments to groups manually such that environments in different groups are as contrasting to each other as possible to ensure that the cross-validation predictions, and hence the RMESP are indicative of the true predictive performance in an untested or future environment.</p>
+</div>
+</div>
+</div>
+<p>Once <code>ec_single()</code> has been run, the RMSEP can be outputted by running <code>$Rmsep</code> on the <code>asreml</code> model object.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>prePAW_rmsep_asr<span class="sc">$</span>Rmsep</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The RMSEP is calculated based on the squared difference between the predicted values for each unique combination of G, E, M generated using the baseline model, and the predictions obtained from the current candidate EC model in conjunction with the cross validation procedure. See <span class="citation" data-cites="Mumford2023">Mumford et al. (<a href="#ref-Mumford2023" role="doc-biblioref">2023</a>)</span> for more details.</p>
+</section>
+<section id="ec_finder" class="level2">
+<h2 class="anchored" data-anchor-id="ec_finder">ec_finder</h2>
+<p>The <code>ec_finder()</code> function is an extension of the previously mentioned <code>ec_single()</code> function in that it takes multiple ECs as an input as a list of quosures, runs <code>ec_single()</code> for each EC, obtains the RMSEP for each included EC and returns a data frame containing the RMSEP for each EC. The <code>ec_finder</code> function captures the loop described in <a href="#fig-ecFinderImage" class="quarto-xref">Figure&nbsp;3</a> in the overall flow chart described in <a href="#fig-ecFinderImage" class="quarto-xref">Figure&nbsp;3</a>.</p>
+<div id="fig-ecFinderImage" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ecFinderImage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ec_finder.png" class="img-fluid figure-img" style="width:100.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ecFinderImage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: A subset of the algorithm outlined in <a href="#fig-ecFlowChart" class="quarto-xref">Figure&nbsp;1</a> that the <code>ec_finder()</code> function implements within the <code>ecreml</code> <code>R</code>-package.
+</figcaption>
+</figure>
+</div>
+<p>Below is an example of using the <code>ec_finder()</code> function to identify which of three provided ECs results in the lowest RMSEP during the during the cross-validation forward selection procedure. Note how <code>ec_finder()</code> is flexible in that you can specify ECs either using the colon (<code>:</code>) operator or separated by a comma (<code>,</code>), enabling are numerous ECs to be input succinctly.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>ec_search <span class="ot">&lt;-</span> <span class="fu">ec_finder</span>(<span class="at">fm =</span> baseline_asr, <span class="at">ECs =</span> rlang<span class="sc">::</span><span class="fu">quos</span>(PrePAW<span class="sc">:</span>PostPAW, PreFlwEvap),</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">G =</span> rlang<span class="sc">::</span><span class="fu">expr</span>(Genotype), <span class="at">E =</span> rlang<span class="sc">::</span><span class="fu">expr</span>(Env),</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">M =</span> rlang<span class="sc">::</span><span class="fu">expr</span>(TargetPop), <span class="at">trial =</span> rlang<span class="sc">::</span><span class="fu">expr</span>(Trial),</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">env_cv_df =</span> SorghumCvGroup)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The two main outputs from <code>ec_finder()</code> include a summary data frame of the RMSEP for each EC listed, as well as an output indicating which EC resulted in the lowest RMSEP during the forward selection procedure.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>ec_search<span class="sc">$</span>summary_ecs</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>ec_search<span class="sc">$</span>ec_selected</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Based on the three ECs investigated in the motivating data, we can see that post-flowering plant available water (<code>PostPAW</code>) resulted in the lowest RMSEP value, indicating that it is better than the other candidate ECs in explaining E effects in an untested environment.</p>
+</section>
+<section id="simplify_ec_model" class="level2">
+<h2 class="anchored" data-anchor-id="simplify_ec_model">simplify_ec_model</h2>
+<p>In the previous section, <code>ec_finder()</code> was used to identify potentially important ECs during the forward selection procedure. The next section is going to focus on the backwards selection component (<a href="#fig-SimplifyEcModelImage" class="quarto-xref">Figure&nbsp;4</a>) of the flow chart in <a href="#fig-ecFlowChart" class="quarto-xref">Figure&nbsp;1</a> to obtain a parsimonious model with respect to each EC in the model.</p>
+<div id="fig-SimplifyEcModelImage" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-SimplifyEcModelImage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="simplify_ec_model.png" class="img-fluid figure-img" style="width:100.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-SimplifyEcModelImage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: A subset of the algorithm outlined in <a href="#fig-ecFlowChart" class="quarto-xref">Figure&nbsp;1</a> that the <code>simplify_ec_model()</code> function implements within the <code>ecreml R</code>-package.
+</figcaption>
+</figure>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-6-contents" aria-controls="callout-6" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Further information - parsimonous models
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-6" class="callout-6-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>It is desirable to obtain a parsimonious model with respect to the important ECs for a number of reasons. The first is that it ensures the model is not over-parameterised, which can result in severe over-fitting of the model, and hence poor performance when attempting to make inferences in a future or untested environment. Another reason is to reduce the computational speed of the model fitting process, which would otherwise grow exponentially as more ECs are included in the model if unnecessary terms were still present. The third reason is philosophical, in that it is desirable use explanations of complex phenomenon that are as simple as possible. This is often referred to as the principle of parsimony, or Occam’s razor.</p>
+</div>
+</div>
+</div>
+<p>The overall backwards selection procedure is performed using the <code>simplify_ec_model()</code> function which is split into two key components. The first is to simplify the random effects part of the model via the <code>ec_random_model()</code> function. This involves investigating whether the <code>spl()</code> terms for continuous ECs are important. This is done using the AIC test described in <span class="citation" data-cites="Verbyla2019">Verbyla (<a href="#ref-Verbyla2019" role="doc-biblioref">2019</a>)</span>. <code>spl()</code> terms may also appear in the model if M is fitted in the baseline model as a continuous variable. In these instances, <code>ec_random_model()</code> will also investigate whether any significant <code>spl(M):EC</code> terms also need to be dropped from the current model.</p>
+<p>We will now demonstrate the backwards selection procedure using the motivating data and assuming that <code>PostPAW</code> was identified as the most important EC during the forward selection procedure. It is good to start by using <code>ec_full_model_constructor()</code> to update the baseline model to include all linear and non-linear <code>spl()</code> terms for <code>PostPAW</code></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>postPAW_full_asr <span class="ot">&lt;-</span>  <span class="fu">ec_full_model_constructor</span>(<span class="at">.fm=</span>baseline_asr, <span class="at">.ec=</span>rlang<span class="sc">::</span><span class="fu">expr</span>(PostPAW), </span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>                                               <span class="at">.G=</span>rlang<span class="sc">::</span><span class="fu">expr</span>(Genotype), <span class="at">.M=</span>rlang<span class="sc">::</span><span class="fu">expr</span>(TargetPop))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We can see what the updated full model looks like with <code>PostPAW</code> included in the model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>postPAW_full_asr<span class="sc">$</span>call</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To remove any unimportant random effects from the model pertaining to <code>PostPAW</code>, we can run <code>ec_random_model()</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>random_simplify_asr <span class="ot">&lt;-</span> <span class="fu">ec_random_model</span>(<span class="at">.fm=</span>postPAW_full_asr, <span class="at">.ecs_in_model=</span>rlang<span class="sc">::</span><span class="fu">quos</span>(PostPAW), <span class="at">.G=</span><span class="st">"Genotype"</span>, <span class="at">.M=</span><span class="st">"TargetPop"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To see what the simplified random effects model looks like, we can then run <code>random_simplify_asr$call</code></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>random_simplify_asr<span class="sc">$</span>call</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>If we now compare the <code>asreml</code> models in <code>postPAW_full_asr</code> and <code>random_simplify_asr</code>, we can see that the term <code>TargetPop:spl(PostPAW):Genotype</code> has been removed from the model.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-7-contents" aria-controls="callout-7" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Side note - interpretation of interaction effects
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-7" class="callout-7-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Note that the 2nd order interaction terms <code>TargetPop:spl(PostPAW)</code> and <code>spl(PostPAW):Genotype</code> remain in the model, as they have been deemed to be important according to the AIC test. Interpretation of what this means in practice is non-trivial, as it requires a clear understanding of the difference between a 3rd-order interaction effect and two 2nd-order interaction effects. In essence, it is suggesting that the non-linear yield response to <code>PostPAW</code> differs for each target plant population, and that the non-linear yield response to <code>PostPAW</code> also differs for each genotype; although the yield response to <code>PostPAW</code> is consistent for across all combinations of target plant population and genotype. This is one of the strengths of the proposed methodology. Namely, that is able to distinguish G<span class="math inline">\(\times\)</span>EC interaction effects from G<span class="math inline">\(\times\)</span>EC and G<span class="math inline">\(\times\)</span>EC<span class="math inline">\(\times\)</span>M interaction effects!</p>
+</div>
+</div>
+</div>
+<p>Once the random effects model has been simplified, we can then look to remove any non-significant EC terms that are in the fixed effects component of the model using the function <code>ec_fixed_model()</code>. This function uses a Wald test to assess the significance of fixed effect ECs</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>fixed_simplify_asr <span class="ot">&lt;-</span> <span class="fu">ec_fixed_model</span>(<span class="at">.fm=</span>random_simplify_asr, <span class="at">.ecs_in_model=</span>rlang<span class="sc">::</span><span class="fu">quos</span>(PostPAW), <span class="at">.G=</span><span class="st">"Genotype"</span>, <span class="at">.M=</span><span class="st">"TargetPop"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Note that the corresponding linear term for an EC in the fixed effects model should only be dropped from the model if the corresponding spline term is non-significant (<span class="citation" data-cites="Verbyla2019">Verbyla (<a href="#ref-Verbyla2019" role="doc-biblioref">2019</a>)</span>). For example, since the term <code>TargetPop:spl(PostPAW):Genotype</code> has been dropped from the random effects part of the model, the corresponding linear term <code>TargetPop:PostPAW:Genotype</code> may also be removed from the model. Conversely, since the <code>TargetPop:spl(PostPAW)</code> term is still in the model, we cannot drop the linear term <code>TargetPop:PostPAW</code>, regardless of whether the term is statistically significant as per the Wald test. The function <code>ec_fixed_model()</code> is designed with this in mind and will ensure that non-significant linear EC terms are only dropped from the model when the corresponding <code>spl()</code> term is absent in the model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>fixed_simplify_asr<span class="sc">$</span>call</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In the updated model, the term <code>TargetPop:PostPAW:Genotype</code> has been dropped from the model, as it was identified as being non-significant in the Wald test. At this stage, it would be appropriate to see if the random effects model can be further simplified using <code>random_simplify_asr</code> now that the term <code>TargetPop:PostPAW:Genotype</code> has been dropped from the model. The backwards selection process continues iterating between <code>ec_random_model()</code> and <code>ec_fixed_model()</code> until the EC model for <code>PostPAW</code> cannot be simplified any further.</p>
+<p>To remove the hassle of having the repeatedly call <code>ec_random_model()</code> and <code>ec_fixed_model()</code>, you can instead call the function <code>simplify_ec_model()</code> which will automatically iterate between <code>random_simplify_asr()</code> and <code>fixed_simplify_asr()</code> internally until the EC model can no longer be simplified.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>simplify_asr <span class="ot">&lt;-</span> <span class="fu">simplify_ec_model</span>(<span class="at">.fm=</span>postPAW_full_asr, <span class="at">.ecs_in_model=</span>rlang<span class="sc">::</span><span class="fu">quos</span>(PostPAW), <span class="at">.G=</span><span class="st">"Genotype"</span>, <span class="at">.M=</span><span class="st">"TargetPop"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Looking at the <code>asreml</code> model in <code>simplify_asr$call</code>, we can see that indeed the EC model for <code>PostPAW</code> cannot be simplified any further.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>simplify_asr<span class="sc">$</span>call</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The interpretation of this model is that there is evidence of an interaction effect between target plant population and <code>PostPAW</code> (M<span class="math inline">\(\times\)</span>EC), as well as an interaction effect between target plant population and <code>PostPAW</code> (G<span class="math inline">\(\times\)</span>EC). The M<span class="math inline">\(\times\)</span>EC interaction effect indicates that the yield response curve to <code>PostPAW</code> differs depending on what the target plant population is.</p>
+<div id="fig-postPawDensityPlot" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-postPawDensityPlot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-postPawDensityPlot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5
+</figcaption>
+</figure>
+</div>
+<p>Similarly, the G<span class="math inline">\(\times\)</span>EC interaction indicates that the yield response curve to <code>PostPAW</code> differs for each genotype. We can graph the non-linear yield response to <code>PostPAW</code> for each genotype using <code>predict.asreml()</code>.</p>
+<div id="fig-postPawGenotypePlot" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-postPawGenotypePlot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Load required graphics packages</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(viridis)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a data frame consisting of all the unique combinations that we want to obtain predictions for</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>PostPAWgeno_df <span class="ot">&lt;-</span> <span class="fu">unique</span>(SorghumYield[, <span class="fu">c</span>(<span class="st">'Env'</span>, <span class="st">'Trial'</span>, <span class="st">'Genotype'</span>, <span class="st">'PostPAW'</span>)])</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Obtain predictions for the data frame created previously</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>PostPAWgeno_pred <span class="ot">&lt;-</span> <span class="fu">predict.asreml</span>( simplify_asr, <span class="at">classify=</span><span class="st">'Genotype:PostPAW'</span>, </span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>                                <span class="at">levels=</span><span class="fu">list</span>(<span class="st">'PostPAW'</span><span class="ot">=</span>PostPAWgeno_df<span class="sc">$</span>PostPAW,</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>                                            <span class="st">'Genotype'</span><span class="ot">=</span>PostPAWgeno_df<span class="sc">$</span>Genotype),</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>                                <span class="at">parallel=</span>T) </span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>PostPAWgeno_pred<span class="sc">$</span>pvals</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the predicted values and 95% credible intervals</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>EC_1_geno <span class="ot">&lt;-</span>  <span class="fu">ggplot</span>( PostPAWgeno_pred<span class="sc">$</span>pvals , <span class="fu">aes</span>( <span class="at">x=</span>PostPAW , <span class="at">y=</span>predicted.value, <span class="at">group=</span>Genotype )) <span class="sc">+</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>        <span class="fu">geom_ribbon</span>( <span class="fu">aes</span>(<span class="at">ymin=</span>predicted.value<span class="dv">-2</span><span class="sc">*</span>std.error, <span class="co">#95% prediction interval</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>                       <span class="at">ymax=</span>predicted.value<span class="sc">+</span><span class="dv">2</span><span class="sc">*</span>std.error, <span class="at">group=</span>Genotype),</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>                       <span class="at">alpha=</span><span class="fl">0.05</span>, <span class="at">linetype=</span><span class="dv">0</span>) <span class="sc">+</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>        <span class="fu">geom_line</span>(<span class="at">colour=</span><span class="st">"Blue"</span>, <span class="at">size=</span><span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>        <span class="fu">geom_point</span>(<span class="at">data =</span> SorghumYield , <span class="fu">aes</span>(<span class="at">x=</span>PostPAW, <span class="at">y=</span>Yld,</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>                                             <span class="at">colour=</span>Env) ,</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>                    <span class="at">stat =</span> <span class="st">"identity"</span> , <span class="at">size=</span><span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>        <span class="fu">facet_wrap</span>(<span class="sc">~</span>Genotype, <span class="at">ncol=</span><span class="dv">2</span>) <span class="sc">+</span> </span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">xlab</span>(<span class="st">"Post-flowering plant avaliable water (mm)"</span>) <span class="sc">+</span></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ylab</span>(<span class="st">"Grain yield (t/ha)"</span>) <span class="sc">+</span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(  <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(), <span class="at">axis.line.x =</span> <span class="fu">element_line</span>(<span class="at">colour =</span> <span class="st">"black"</span>))</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Print the ggplot object</span></span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>EC_1_geno</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-postPawGenotypePlot-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: Predicted values generated from <code>predict.asreml()</code> for the Genotype<span class="math inline">\(\\times\)</span><code>PostPAW</code> interaction effect. Shaded regions represent the 95\% prediction intervals.
+</figcaption>
+</figure>
+</div>
+<p><a href="#fig-postPawGenotypePlot" class="quarto-xref">Figure&nbsp;6</a> highlights a number of advantages of the proposed methodology, including:</p>
+<ul>
+<li>The methodology can output 95% prediction intervals to measure uncertainty in the yield response to <code>PostPAW</code></li>
+<li>If you believe that the proposed methodology can be considered a form of machine learning, the figure can be described as providing insight into ‘what the machine is thinking’ when an important EC is selected</li>
+<li>The figure can be used as a guide to determine if the identified response is biologically sensible</li>
+</ul>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-8-contents" aria-controls="callout-8" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Side note - Wald test
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-8" class="callout-8-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>One important thing to note is that by default, the Wald test for the fixed effects assumes that the denominator degrees of freedom for testing of the EC fixed effect terms is large. This is appropriate when the number of environments in the MET data is large. For a smaller number of environments (&lt;20), I would strongly recommend using the setting <code>denDF="numeric"</code> in <code>ec_fixed_model()</code>. Setting <code>denDF="numeric"</code> will tell <code>asreml</code> to estimate the denominator degrees of freedom using the method of <span class="citation" data-cites="Kenward1997">Kenward and Roger (<a href="#ref-Kenward1997" role="doc-biblioref">1997</a>)</span>, in order to obtain correct <span class="math inline">\(p\)</span>-values for testing significance of EC fixed effects.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>fixed_simplify_asr <span class="ot">&lt;-</span> <span class="fu">ec_fixed_model</span>(<span class="at">.fm=</span>random_simplify_asr, <span class="at">.ecs_in_model=</span>rlang<span class="sc">::</span><span class="fu">quos</span>(PostPAW), </span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                                     <span class="at">.G=</span><span class="st">"Genotype"</span>, <span class="at">.M=</span><span class="st">"TargetPop"</span>, <span class="at">denDF=</span><span class="st">"numeric"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The <code>denDF="numeric"</code> option can also be modified in <code>simplify_ec_model()</code></p>
+<p>One caveat with estimating the denominator degrees of freedom is that it is notoriously slow, particularly when there are a large number of environment present in the MET data set - the precise situation we expect to have when incorporating ECs into the model. Moreover, the Wald test will assume by default that the denominator degrees of freedom are very large, so when the actual denominator degrees of freedom are large (&gt;30), you should expect a small, negligible difference in the significance testing between using a Wald statistic and an approximate F-statistic using <span class="citation" data-cites="Kenward1997">Kenward and Roger (<a href="#ref-Kenward1997" role="doc-biblioref">1997</a>)</span> to approximate the denominator degrees of freedom. This is the reason why the default is set to assume that the denominator degrees of freedom is sufficiently large with <code>denDF="none"</code>.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="ec_iteration" class="level2">
+<h2 class="anchored" data-anchor-id="ec_iteration">ec_iteration</h2>
+<p>In essence, the <code>ec_iteration()</code> function combines the functionality of <code>ec_finder()</code> and <code>simplify_ec_model()</code> described in the previous section. In other words, the <code>ec_iteration()</code> function performs both the forward and backwards selection procedure automatically, with the output being a new <code>asreml</code> model with an additional EC included in the model, and all non-significant terms removed from the output model. With regards to the overall algorithm, the <code>ec_iteration()</code> function performs the loop described in <a href="#fig-ecIterationImage" class="quarto-xref">Figure&nbsp;7</a>.</p>
+<div id="fig-ecIterationImage" class="quarto-figure quarto-figure-center quarto-float anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ecIterationImage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="ec_iteration.png" class="img-fluid figure-img" style="width:100.0%"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-ecIterationImage-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7: A subset of the algorithm outlined in <a href="#fig-ecFlowChart" class="quarto-xref">Figure&nbsp;1</a> that <code>ec_iteration</code> function implements within the <code>ecreml R</code>-package.
+</figcaption>
+</figure>
+</div>
+<p>The <code>ec_iteration()</code> function is demonstrated on the motivating data set below for a subset of three ECs being <code>PrePAW</code>, <code>PostPAW</code>, and pre-flowering evapotranspiration (<code>PreFlwEvap</code>).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>ec1_model_asr <span class="ot">&lt;-</span> <span class="fu">ec_iteration</span>(<span class="at">fm=</span>baseline_asr, <span class="at">ECs =</span> rlang<span class="sc">::</span><span class="fu">quos</span>(PrePAW<span class="sc">:</span>PostPAW, PreFlwEvap),</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>      <span class="at">G=</span> rlang<span class="sc">::</span><span class="fu">expr</span>(Genotype), <span class="at">E =</span> rlang<span class="sc">::</span><span class="fu">expr</span>(Env),</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>      <span class="at">M=</span> rlang<span class="sc">::</span><span class="fu">expr</span>(TargetPop), <span class="at">trial =</span> rlang<span class="sc">::</span><span class="fu">expr</span>(Trial),</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>      <span class="at">env_cv_df=</span>SorghumCvGroup)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The <code>ec_iteration()</code> function returns three outputs in a list. The first output is a character displaying the EC that was selected from the set of ECs provided using the <code>EC</code> input using the forward selection procedure.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>ec1_model_asr<span class="sc">$</span>selected_ec</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The second output is the parsimonious <code>asreml</code> model obtained after running the backwards selection procedure</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>ec1_model_asr<span class="sc">$</span>fm<span class="sc">$</span>call</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The third output is the RMSEP of the current model after performing both the forward and backwards selection procedures.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>ec1_model_asr<span class="sc">$</span>rmsep</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="ec_all" class="level2">
+<h2 class="anchored" data-anchor-id="ec_all">ec_all</h2>
+<p>The <code>ec_all()</code> function performs the entire subset selection algorithm described in <a href="#fig-ecFlowChart" class="quarto-xref">Figure&nbsp;1</a> by searching for multiple ECs to include in the model, as opposed to <code>ec_iteration()</code> which includes only a single additional EC in the model. Note that running <code>ec_all()</code> make take a long time, especially if there are a large number of ECs being considered.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>ec_model_asr <span class="ot">&lt;-</span> <span class="fu">ec_all</span>(<span class="at">fm=</span>baseline_asr, <span class="at">ECs =</span> rlang<span class="sc">::</span><span class="fu">quos</span>(PrePAW<span class="sc">:</span>PostPAW, PreFlwEvap),</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>       <span class="at">G=</span> rlang<span class="sc">::</span><span class="fu">expr</span>(Genotype), <span class="at">E =</span> rlang<span class="sc">::</span><span class="fu">expr</span>(Env),</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>       <span class="at">M=</span> rlang<span class="sc">::</span><span class="fu">expr</span>(TargetPop), <span class="at">trial =</span> rlang<span class="sc">::</span><span class="fu">expr</span>(Trial),</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>       <span class="at">env_cv_df=</span>SorghumCvGroup , <span class="at">kn=</span><span class="dv">6</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Similar to <code>ec_iteration()</code>, the outputs for <code>ec_all()</code> include a final model after all ECs have been considered, as well as the RMSEP for the final model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>ec_model_asr<span class="sc">$</span>fm<span class="sc">$</span>call</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>ec_model_asr<span class="sc">$</span>rmsep</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-9-contents" aria-controls="callout-9" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Further information
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-9" class="callout-9-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>There are a number of things to note in the <code>asreml</code> call. The first is that EC terms appear in the final model only for the ECs <code>PrePAW</code> and <code>PostPAW</code>, and not for <code>PreFlwEvap</code>; which indicates that the EC <code>PreFlwEvap</code> does not explain any of the E effects for grain yield.</p>
+<p>Another interesting thing to note is that in the full model, all of the terms corresponding to the <code>TargetPop</code><span class="math inline">\(\times\)</span><code>PostPAW</code> interaction have dropped out of the model, as they are deemed to be not important. This is not uncommon, and indicates that the E<span class="math inline">\(\times\)</span>M interaction is better explained by other ECs; namely <code>PrePAW</code> in this example. Conversely, all of the terms pertaining to <code>PrePAW</code> indicate that there is an interaction effect between <code>PrePAW</code><span class="math inline">\(\times\)</span><code>TargetPop</code>, but no interaction effect genotype and <code>PrePAW</code>.</p>
+<p>It is important to emphasise that this is a simplified example in the sense that we have only considered three ECs. Exploration of the variances of the outputted model indicate that there is still a lot of the E component that is unexplained by <code>PostPAW</code> and <code>PrePAW</code>. This can be seen by the fact the variance components for the <code>Env</code> and <code>Trial</code> ‘lack-of-fit’ terms are still relatively large.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(ec_model_asr<span class="sc">$</span>fm)<span class="sc">$</span>varcomp</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Another interesting thing to note in the table above is that the variance components <code>Trial:Genotype:TargetPop</code> and <code>Trial:Genotype:TargetPop</code> are boundary (i.e.&nbsp;equal to zero). This implies that for sorghum yield in this particular target population of environments, the perceived G<span class="math inline">\(\times\)</span>E<span class="math inline">\(\times\)</span>M is in fact a combination of the presence of a G<span class="math inline">\(\times\)</span>E interaction (which in part can be explained by <code>PostPAW</code>) and a E<span class="math inline">\(\times\)</span>M interaction effect (which in part can be explained by <code>PrePAW</code>. The ability to perform this decomposition of the G<span class="math inline">\(\times\)</span>E<span class="math inline">\(\times\)</span>M interaction is a powerful feature of the proposed methodology.</p>
+<p>As mentioned in <span class="citation" data-cites="Mumford2023">Mumford et al. (<a href="#ref-Mumford2023" role="doc-biblioref">2023</a>)</span>, it is important to stress that ECs can be highly correlated with each other, and hence the ECs identified by the proposed methodology may not be causal. To get the best results out of using the <code>ecreml</code> package, it is recommended that the ECs included in the model should be as independent as possible.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="future-work" class="level2">
+<h2 class="anchored" data-anchor-id="future-work">Future work</h2>
+<p>It is hopeful that further features will be included in the <code>ecreml</code> <code>R</code>-package, such as utility functions to automate the generation of predicted values and standard errors for an <code>asreml</code> model with ECs included. We also hope to include some graphics functions to assist researchers in plotting the EC response to the trait of interest without having to write out all the code to produce <a href="#fig-postPawGenotypePlot" class="quarto-xref">Figure&nbsp;6</a> for example. We are also interested in exploring functionality of the <code>ecreml</code> <code>R</code>-package to be compatible with other <code>R</code>-packages that provide publicly available EC data for a given environment through global satellite meteorology data (e.g.&nbsp;the <code>nasapower</code> API client <span class="citation" data-cites="Sparks2018">(<a href="#ref-Sparks2018" role="doc-biblioref">Sparks, 2018</a>)</span>), local weather stations, or other means when EC data for a MET data set is unavailable.</p>
+</section>
+<section id="references" class="level2 unnumbered">
+
+
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">References</h2><div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-Fitzmaurice2008" class="csl-entry" role="listitem">
+Fitzmaurice, G., Davidian, M., Verbeke, G. and Molenberghs, G. (2008) <em>Longitudinal Data Analysis</em>. CRC press.
+</div>
+<div id="ref-Gilmour1997" class="csl-entry" role="listitem">
+Gilmour, A.R., Cullis, B.R. and Verbyla, A.P. (1997) <span class="nocase">Accounting for Natural and Extraneous Variation in the Analysis of Field Experiments</span>. <em>Journal of Agricultural, Biological, and Environmental Statistics</em>, <strong>2</strong>, 269–293.
+</div>
+<div id="ref-Green1993" class="csl-entry" role="listitem">
+Green, P.J. and Silverman, B.W. (1993) <em>Nonparametric Regression and Generalized Linear Models: A Roughness Penalty Approach</em>. CRC Press.
+</div>
+<div id="ref-Kenward1997" class="csl-entry" role="listitem">
+Kenward, M.G. and Roger, J.H. (1997) Small sample inference for fixed effects from restricted maximum likelihood. <em>Biometrics</em>, 983–997.
+</div>
+<div id="ref-Mumford2023" class="csl-entry" role="listitem">
+Mumford, M.H., Forknall, C.R., Rodriguez, D., Eyre, J.X. and Kelly, A.M. (2023) Incorporating environmental covariates to explore genotype <span class="math inline">\(\times\)</span> environment <span class="math inline">\(\times\)</span> management (<span>G</span><span class="math inline">\(\times\)</span><span>E</span><span class="math inline">\(\times\)</span><span>M</span>) interactions: A one-stage predictive model. <em>Field Crops Research</em>, <strong>304</strong>, 109133.
+</div>
+<div id="ref-Sparks2018" class="csl-entry" role="listitem">
+Sparks, A.H. (2018) <a href="https://doi.org/10.21105/joss.01035">Nasapower: A NASA POWER <span>G</span>lobal <span>M</span>eteorology, <span>S</span>urface <span>S</span>olar <span>E</span>nergy and <span>C</span>limatology <span>D</span>ata <span>C</span>lient for <span>R</span></a>. <em>The Journal of Open Source Software</em>, <strong>3</strong>, 1035.
+</div>
+<div id="ref-VSNi2025" class="csl-entry" role="listitem">
+The VSNi Team. (2025) <em><a href="https://www.vsni.co.uk"><span class="nocase">asr</span>eml: Fits Linear Mixed Models Using REML</a></em>.
+</div>
+<div id="ref-Verbyla2019" class="csl-entry" role="listitem">
+Verbyla, A.P. (2019) A note on model selection using information criteria for general linear models estimated using <span>REML</span>. <em>Australian &amp; New Zealand Journal of Statistics</em>, <strong>61</strong>, 39–50.
+</div>
+<div id="ref-Verbyla1999" class="csl-entry" role="listitem">
+Verbyla, A.P., Cullis, B.R., Kenward, M.G. and Welham, S.J. (1999) The analysis of designed experiments and longitudinal data by using smoothing splines. <em>Journal of the Royal Statistical Society: Series C (Applied Statistics)</em>, <strong>48</strong>, 269–311.
+</div>
+<div id="ref-Verbyla2018" class="csl-entry" role="listitem">
+Verbyla, A.P., De Faveri, J., Wilkie, J.D. and Lewis, T. (2018) Tensor cubic smoothing splines in designed experiments requiring residual modelling. <em>Journal of Agricultural, Biological and Environmental Statistics</em>, <strong>23</strong>, 478–508.
+</div>
+<div id="ref-Wood2017" class="csl-entry" role="listitem">
+Wood, S.N. (2017) <em>Generalized Additive Models: An Introduction with <span>R</span></em>. CRC press.
+</div>
+</div></section></div></main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
