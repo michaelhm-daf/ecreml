@@ -2,7 +2,7 @@
 title: "ecreml R-Package Guide"
 author: Michael Mumford
 date: today
-format: html
+format: pdf
 csl: biometrics.csl
 bibliography: ecremlPapers.bib
 vignette: >
@@ -39,7 +39,8 @@ The `ecreml R`-package will also require users to be proficient in using the `as
 The subset selection algorithm to identify important ECs can be summarised in the flow chart below, which is taken from @fig-ecFlowChart of @Mumford2023. The proposed methodology can be thought of as being somewhat analogous to a genome-wide association study (GWAS) which attempts to better explain the genetic (G) component of the G$\times$E$\times$M interaction using genotypic covariates such as markers or quantitative trait loci (QTLs). The difference being that instead of the G component, we are attempting to explain the environment (E) component through EC data.
 
 ::: {#fig-ecFlowChart}
-```{r ecFlowChart, include = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results="markup", out.width='100%'}
+```{r , include = TRUE, echo=FALSE, message=FALSE, warning=FALSE, results="markup", out.width='100%'}
+
 
 knitr::include_graphics(path="ecFlowChart.png")
 ```
@@ -61,6 +62,9 @@ knitr::opts_chunk$set(
 ```
 
 ```{r load-packages, include = TRUE, message=FALSE, warning=FALSE, results="hide"}
+
+
+
 # Load required R packages
 library(asreml)
 library(ecreml)
@@ -308,56 +312,6 @@ simplify_asr$call
 ```
 
 The interpretation of this model is that there is evidence of an interaction effect between target plant population and `PostPAW` (M$\times$EC), as well as an interaction effect between target plant population and `PostPAW` (G$\times$EC). The M$\times$EC interaction effect indicates that the yield response curve to `PostPAW` differs depending on what the target plant population is.
-
-::: {#fig-postPawDensityPlot}
-```{r, eval=FALSE, include=FALSE , message=FALSE, warning=FALSE, results="hide"}
-
-# Load required graphics packages
-library(tidyverse)
-library(viridis)
-# Create a data frame consisting of all the unique combinations of established plant population and Post-flowering plant available water that we want to obtain predictions for
-PostPAWdensity_df <- unique(SorghumYield[, c('Env', 'Trial', 'TargetPop', 'PostPAW')])
-
-# Obtain predictions for the data frame created previously
-PostPAWdensity_pred <- predict( simplify_asr, classify='TargetPop:PostPAW', 
-                                levels=list('PostPAW'=PostPAWdensity_df$PostPAW,
-                                            'TargetPop'=PostPAWdensity_df$TargetPop),
-                                #average=c("Env"),
-                                parallel=T) 
-
-PostPAWdensity_pred$pvals
-
-# Plot the predictions
-EC_1_density <-  ggplot( PostPAWdensity_pred$pvals , aes( x=PostPAW , y=predicted.value, group=TargetPop )) +
-        geom_ribbon( aes(ymin=predicted.value-2*std.error, #95% prediction interval
-                       ymax=predicted.value+2*std.error, group=TargetPop),
-                       alpha=0.03, linetype=0) +
-        geom_line(colour="Blue", size=0.5) +
-        #geom_point() +
-        geom_point(data = SorghumYield , aes(x=PostPAW, y=Yld,
-                                             colour=Env) ,
-                    stat = "identity" , size=0.8) +
-        #geom_line(data=Final_pred$pvals, colour="Green4", size=0.55) +
-        facet_wrap(~TargetPop, ncol=2) + 
-  xlab("Post-flowering plant avaliable water (mm)") +
-  ylab("Grain yield (t/ha)") +
-  theme_bw() +
-  theme(  panel.grid.minor = element_blank(), axis.line.x = element_line(colour = "black"),
-          # legend.title = element_text(size=12),
-          # legend.text = element_text(size=12),
-          # panel.border = element_blank(),
-          # panel.background = element_blank(),
-          # axis.line.y = element_line(colour = "black"),
-          # axis.text.x = element_text(size=15),
-          # axis.title.y = element_text(size=12),
-          # axis.title.x = element_text(size=15),
-          # axis.text.y = element_text(size=15),
-          # strip.text.x = element_text(size=11),
-          # strip.text.y = element_text(size=11))
-# Print ggplot object
-EC_1_density
-```
-:::
 
 Similarly, the G$\times$EC interaction indicates that the yield response curve to `PostPAW` differs for each genotype. We can graph the non-linear yield response to `PostPAW` for each genotype using `predict.asreml()`.
 

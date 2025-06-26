@@ -6,7 +6,7 @@
 \alias{ecreml-package}
 \title{ecreml: Incorporates ECs into the analysis of agricultural trial data containing GxExM interactions}
 \description{
-This R-package complements the statistical methodology outlined in Mumford et al. (2023) that enables environmental covariates (ECs) to be incorporated into the multi-environment trial (MET) analysis of agricultural consisting of Genotype x Environment x Management (GxExM) interaction effects. Specifically, this R-package contains a suite of functions that automate the process of identifying key ECs contributing to the GxExM interaction after a baseline model is fitted using the ASReml R-package tat does not contain any EC information.
+This R-package complements the statistical methodology outlined in Mumford et al. (2023) that enables environmental covariates (ECs) to be incorporated into the multi-environment trial (MET) analysis of agricultural consisting of Genotype x Environment x Management (GxExM) interaction effects. Specifically, this R-package contains a suite of functions that automate the process of identifying key ECs contributing to the GxExM interaction after a baseline model is fitted using the ASReml R-package that does not contain any EC information.
 }
 \seealso{
 Useful links:
@@ -17,7 +17,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Michael Mumford \email{Michael.Mumford@daf.qld.gov.au} (\href{https://orcid.org/0000-0002-5037-8680}{ORCID})
+\strong{Maintainer}: Michael Mumford \email{Michael.Mumford@dpi.qld.gov.au} (\href{https://orcid.org/0000-0002-5037-8680}{ORCID})
 
 }
 \keyword{internal}

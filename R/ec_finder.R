@@ -233,6 +233,8 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
     stop(paste("Error: The number of cores specified (", .cores, ") exceeds the available system cores (", total_cores, ").", sep = ""))
   }
 
+  # Set global options for asreml to minimise warning messages
+  asreml::asreml.options(Cfixed=TRUE)
 
   # Obtain the data frame from the baseline model
   .df  <- base::eval(.fm$call$data)

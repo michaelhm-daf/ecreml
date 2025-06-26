@@ -82,6 +82,8 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M, .kn=10){
     stop("Error: The argument '.M' must be a single character string.")
   }
 
+  # Set global options for asreml to minimise warning messages
+  asreml::asreml.options(Cfixed=TRUE)
 
   # Obtain the data frame from the baseline model
   .df  <<- base::eval(.fm$call$data)
