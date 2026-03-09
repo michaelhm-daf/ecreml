@@ -12,9 +12,8 @@ Description: This R-package complements the statistical methodology outlined in 
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports:
-    asreml (>= 4.2.0.372),
     doParallel (>= 1.0.17),
     dplyr (>= 1.1.2),
     foreach (>= 1.5.2),
@@ -33,6 +32,7 @@ Imports:
     tidyr (>= 1.3.0),
     tidyverse (>= 2.0.0)
 Suggests: 
+    asreml (>= 4.2.0.372),
     agridat (>= 1.2.1),
     bookdown,
     bslib,
