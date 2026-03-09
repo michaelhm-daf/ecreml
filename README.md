@@ -31,3 +31,14 @@ You can install the development version of ecreml from
 remotes::install_github("michaelhm-daf/ecreml", build_vignettes = TRUE)
 
 ```
+
+## Note: Licencing ASReml-R
+
+ASReml-R is a proprietary R-package which is sold and supported by [VSNi
+International](https://vsni.co.uk/), and requires a licence code to
+activate and run. Further information about the licence requirements can
+be obtained by [VSNi directly](https://vsni.co.uk/licensing/).
+
+The developers of `ecreml` do not provide support for `ASReml-R`, and
+any problems with ASReml-R software should be directed to [VSNi
+International](https://vsni.co.uk/).
