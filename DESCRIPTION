@@ -1,6 +1,6 @@
 Package: ecreml
 Title: Incorporates ECs into the analysis of agricultural trial data containing GxExM interactions
-Version: 0.1.001
+Version: 0.1.002
 Authors@R: 
     person("Michael", "Mumford", , "Michael.Mumford@dpi.qld.gov.au", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-5037-8680"))
