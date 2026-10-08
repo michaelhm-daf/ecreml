@@ -13,7 +13,8 @@ rmsep_calc(
   .env_cv_df = NULL,
   .cores = 2,
   .kn = 10,
-  .ecs_in_bline_model = rlang::quos(NULL)
+  .ecs_in_bline_model = rlang::quos(NULL),
+  .captured = FALSE
 )
 }
 \arguments{
@@ -76,7 +77,7 @@ baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
   na.action=na.method(x='include'),
   maxit=30, workspace="1Gb")
 # Calculate the (average) root mean square error of prediction (rmsep)
-baseline_rmsep <- rmsep_calc(.fm=baseline_asr, .G=rlang::expr(Genotype), .E=rlang::expr(Env), .M=rlang::expr(density),
+baseline_rmsep <- rmsep_calc(.fm=basload_all()eline_asr, .G=rlang::expr(Genotype), .E=rlang::expr(Env), .M=rlang::expr(density),
                   .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
 baseline_rmsep$Rmsep
 }

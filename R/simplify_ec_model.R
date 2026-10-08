@@ -46,49 +46,61 @@
 #' random_simplify_asr <- ec_random_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
 #' random_simplify_asr$call
 #' @export
-ec_random_model <- function(.fm, .ecs_in_model, .G, .M, .kn=10){
+ec_random_model <- function(.fm, .ecs_in_model, .G, .M, .kn=10,
+                            .captured = FALSE){
 
-  # Error handling for input arguments
 
-  # Check if .fm is provided and is a valid asreml model object
+  # Check model first because we need the data frame
   if (missing(.fm) || is.null(.fm)) {
     stop("Error: The argument '.fm' (current model) must be provided and cannot be NULL.")
   }
+
   if (!inherits(.fm, "asreml")) {
     stop("Error: The argument '.fm' must be a valid asreml model object.")
   }
 
-  # Check if .ecs_in_model is provided and is a list of expressions
-  if (missing(.ecs_in_model) || is.null(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be provided and cannot be NULL.")
-  }
-  if (!rlang::is_quosures(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' must be a list of expressions (quosures).")
-  }
+  # Obtain the data frame from the model
+  .df <<- base::eval(.fm$call$data)
 
-  # Check if .G is provided and is a character
-  if (missing(.G) || is.null(.G)) {
-    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.G) || length(.G) != 1) {
-    stop("Error: The argument '.G' must be a single character string.")
-  }
+  # Convert EC inputs
+  if(!.captured){
 
-  # Check if .M is provided and is a character
-  if (missing(.M) || is.null(.M)) {
-    stop("Error: The argument '.M' (management practice term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.M) || length(.M) != 1) {
-    stop("Error: The argument '.M' must be a single character string.")
+    ecs_expr <- rlang::enexpr(.ecs_in_model)
+
+    .ecs_in_model <- capture_ecs(
+      ECs = ecs_expr,
+      data = .df
+    )
+
+    .G <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.G)
+      )
+    )
+
+    .M <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.M)
+      )
+    )
+
+  } else {
+
+    if(!rlang::is_quosures(.ecs_in_model)){
+
+      .ecs_in_model <- capture_ecs(
+        ECs = .ecs_in_model,
+        data = .df
+      )
+
+    }
+
+    .G <- normalise_name(.G)
+    .M <- normalise_name(.M)
   }
 
   # Set global options for asreml to minimise warning messages
   asreml::asreml.options(Cfixed=TRUE)
-
-  # Obtain the data frame from the baseline model
-  .df  <<- base::eval(.fm$call$data)
-
-
 
   # Check if the data frame is valid
   if (is.null(.df) || !is.data.frame(.df)) {
@@ -391,51 +403,62 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M, .kn=10){
 #' fixed_simplify_asr <- ec_fixed_model(.fm=random_simplify_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
 #' fixed_simplify_asr$call
 #' @export
-ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
+ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none",
+                           .captured=FALSE){
 
-  # Error handling for input arguments
-
-  # Check if .fm is provided and is a valid asreml model object
+  # Check model first because we need the data frame
   if (missing(.fm) || is.null(.fm)) {
     stop("Error: The argument '.fm' (current model) must be provided and cannot be NULL.")
   }
+
   if (!inherits(.fm, "asreml")) {
     stop("Error: The argument '.fm' must be a valid asreml model object.")
   }
 
-  # Check if .ecs_in_model is provided and is a list of expressions
-  if (missing(.ecs_in_model) || is.null(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be provided and cannot be NULL.")
-  }
-  if (!rlang::is_quosures(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be a list of expressions (quosures).")
-  }
+  # Obtain the data frame from the model
+  .df <<- base::eval(.fm$call$data)
 
-  # Check if .G is provided and is a character
-  if (missing(.G) || is.null(.G)) {
-    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.G) || length(.G) != 1) {
-    stop("Error: The argument '.G' (genotype term) must be a single character string.")
-  }
+  # Convert EC inputs
+  if(!.captured){
 
-  # Check if .M is provided and is a character
-  if (missing(.M) || is.null(.M)) {
-    stop("Error: The argument '.M' (management practice term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.M) || length(.M) != 1) {
-    stop("Error: The argument '.M' (management practice term) must be a single character string.")
+    ecs_expr <- rlang::enexpr(.ecs_in_model)
+
+    .ecs_in_model <- capture_ecs(
+      ECs = ecs_expr,
+      data = .df
+    )
+
+    .G <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.G)
+      )
+    )
+
+    .M <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.M)
+      )
+    )
+
+  } else {
+
+    if(!rlang::is_quosures(.ecs_in_model)){
+
+      .ecs_in_model <- capture_ecs(
+        ECs = .ecs_in_model,
+        data = .df
+      )
+
+    }
+
+    .G <- normalise_name(.G)
+    .M <- normalise_name(.M)
   }
 
   # Check if denDF is a valid value
   if (!is.character(denDF) || !(denDF %in% c("none", "numeric", "algebraic"))) {
     stop("Error: The argument 'denDF' (denominator degrees of freedom) must be one of 'none', 'numeric', or 'algebraic'.")
   }
-
-
-  # Obtain the data frame from the baseline model
-  # Note, use super assignment to modify .df in the global environment
-  .df  <<- base::eval(.fm$call$data)
 
   # Check if the data frame is valid
   if (is.null(.df) || !is.data.frame(.df)) {
@@ -649,52 +672,63 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
 #' simplify_asr <- simplify_ec_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
 #' simplify_asr$call
 #' @export
-simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none", .kn=10){
+simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none",
+                              .kn=10, .captured=FALSE){
 
 
-  # Error handling for input arguments
-
-  # Check if .fm is provided and is a valid asreml model object
+  # Check model first because we need the data frame
   if (missing(.fm) || is.null(.fm)) {
     stop("Error: The argument '.fm' (current model) must be provided and cannot be NULL.")
   }
+
   if (!inherits(.fm, "asreml")) {
     stop("Error: The argument '.fm' must be a valid asreml model object.")
   }
 
-  # Check if .ecs_in_model is provided and is a list of expressions
-  if (missing(.ecs_in_model) || is.null(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be provided and cannot be NULL.")
-  }
-  if (!rlang::is_quosures(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be a list of expressions (quosures).")
-  }
+  # Obtain the data frame from the model
+  .df <<- base::eval(.fm$call$data)
 
-  # Check if .G is provided and is a character
-  if (missing(.G) || is.null(.G)) {
-    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.G) || length(.G) != 1) {
-    stop("Error: The argument '.G' (genotype term) must be a single character string.")
-  }
+  # Convert EC inputs
+  if(!.captured){
 
-  # Check if .M is provided and is a character
-  if (missing(.M) || is.null(.M)) {
-    stop("Error: The argument '.M' (management practice term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.M) || length(.M) != 1) {
-    stop("Error: The argument '.M' (management practice term) must be a single character string.")
+    ecs_expr <- rlang::enexpr(.ecs_in_model)
+
+    .ecs_in_model <- capture_ecs(
+      ECs = ecs_expr,
+      data = .df
+    )
+
+    .G <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.G)
+      )
+    )
+
+    .M <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.M)
+      )
+    )
+
+  } else {
+
+    if(!rlang::is_quosures(.ecs_in_model)){
+
+      .ecs_in_model <- capture_ecs(
+        ECs = .ecs_in_model,
+        data = .df
+      )
+
+    }
+
+    .G <- normalise_name(.G)
+    .M <- normalise_name(.M)
   }
 
   # Check if denDF is a valid value
   if (!is.character(denDF) || !(denDF %in% c("none", "numeric", "algebraic"))) {
     stop("Error: The argument 'denDF' (denominator degrees of freedom calculation) must be one of 'none', 'numeric', or 'algebraic'.")
   }
-
-
-  # Identify the data frame from the model
-  .df <<- base::eval(.fm$call$data)
-
 
   # Check if the data frame is valid
   if (is.null(.df) || !is.data.frame(.df)) {
@@ -716,7 +750,8 @@ simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none", .kn=10){
   while(KeepSimplifying==TRUE){
     # Simplify the random effects
     new_random_fm <- tryCatch(
-      ec_random_model(.fm = curr_fm, .ecs_in_model = .ecs_in_model, .G = .G, .M = .M, .kn=.kn),
+      ec_random_model(.fm = curr_fm, .ecs_in_model = .ecs_in_model, .G = .G,
+                      .M = .M, .kn=.kn, .captured=TRUE),
       error = function(e) {
         stop("Error during random effects simplification: ", e$message)
       }
@@ -724,7 +759,8 @@ simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none", .kn=10){
 
     # Simplify the fixed effects
     new_fm <- tryCatch(
-      ec_fixed_model(.fm = new_random_fm, .ecs_in_model = .ecs_in_model, .G = .G, .M = .M, denDF = denDF),
+      ec_fixed_model(.fm = new_random_fm, .ecs_in_model = .ecs_in_model,
+                     .G = .G, .M = .M, denDF = denDF, .captured=TRUE),
       error = function(e) {
         stop("Error during fixed effects simplification: ", e$message)
       }

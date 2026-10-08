@@ -15,7 +15,8 @@ ec_single(
   .cores = 2,
   .kn = 10,
   .ecs_in_bline_model = rlang::quos(NULL),
-  aliased = FALSE
+  aliased = FALSE,
+  .captured = FALSE
 )
 }
 \arguments{

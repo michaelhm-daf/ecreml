@@ -131,8 +131,22 @@ cv_groups <- function(E, folds = 6) {
 #'  ec_rmsep_summary$Rmsep
 #'
 #' @export
-ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
-                       .cores=2, .kn=10, .ecs_in_bline_model=rlang::quos(NULL), aliased=FALSE){
+ec_single <- function(.fm, .ec, .G, .E, .M, .trial = NULL, .env_cv_df=NULL,
+                       .cores=2, .kn=10, .ecs_in_bline_model=rlang::quos(NULL),
+                      aliased=FALSE, .captured=FALSE){
+
+  if(!.captured){
+
+    .G <- normalise_expr(rlang::enexpr(.G))
+    .E <- normalise_expr(rlang::enexpr(.E))
+    .M <- normalise_expr(rlang::enexpr(.M))
+    .trial <- normalise_expr(rlang::enexpr(.trial))
+    .ec <- normalise_expr(rlang::enexpr(.ec))
+  }
+
+  cat("Inside ec_single:\n")
+  print(.E)
+  print(rlang::expr_text(.E))
 
   # Error handling for input arguments
 
@@ -148,9 +162,9 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   if (missing(.ec) || is.null(.ec)) {
     stop("Error: The argument '.ec' (environmental covariate) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_expression(.ec)) {
-    stop("Error: The argument '.ec' must be a valid R expression.")
-  }
+  # if (!rlang::is_expression(.ec)) {
+  #   stop("Error: The argument '.ec' must be a valid R expression.")
+  # }
 
   # Check if .G, .E, and .M are provided and are expressions
   if (missing(.G) || is.null(.G)) {
@@ -167,9 +181,9 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
     stop("Error: The argument '.E' must be a valid R expression.")
   }
 
-  if (!is.null(.M) && !rlang::is_expression(.M)) {
-    stop("Error: The argument '.M' (management practice term) must be a valid R expression if provided.")
-  }
+  # if (!is.null(.M) && !rlang::is_expression(.M)) {
+  #   stop("Error: The argument '.M' (management practice term) must be a valid R expression if provided.")
+  # }
 
   # Check if .trial is an expression if provided
   if (!is.null(.trial) && !rlang::is_expression(.trial)) {
@@ -192,9 +206,9 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   }
 
   # Check if .ecs_in_bline_model is a list of quosures
-  if (!is.null(.ecs_in_bline_model) && !rlang::is_quosures(.ecs_in_bline_model)) {
-    stop("Error: The argument '.ecs_in_bline_model' must be a list of quosures if provided.")
-  }
+  # if (!is.null(.ecs_in_bline_model) && !rlang::is_quosures(.ecs_in_bline_model)) {
+  #   stop("Error: The argument '.ecs_in_bline_model' must be a list of quosures if provided.")
+  # }
 
   # Check if aliased is a logical value
   if (!is.logical(aliased)) {
@@ -218,9 +232,9 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   }
 
   # Check if .env_cv_df contains the environment term
-  if (!is.null(.env_cv_df) && is.null(.env_cv_df[[rlang::as_string(.E)]])) {
-    stop("Error: The environment term is missing from the provided environment grouping for cross-validation.")
-  }
+  # if (!is.null(.env_cv_df) && is.null(.env_cv_df[[rlang::as_string(.E)]])) {
+  #   stop("Error: The environment term is missing from the provided environment grouping for cross-validation.")
+  # }
 
   # Ensure the number of cores does not exceed the number of cross-validation groups
   if (!is.null(.env_cv_df) && .cores > length(unique(.env_cv_df$cv_group))) {
@@ -710,8 +724,68 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' ec_search$summary_ecs
 #' @export
 ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
-                      cores=2, kn=10, trial=NULL, ecs_in_bline_model=rlang::quos(NULL))
+                      cores=2, kn=10, trial=NULL,
+                      ecs_in_bline_model=rlang::quos(NULL),
+                      .captured=FALSE)
 {
+
+   # Obtain the data frame from the asreml model
+  df  <- base::eval(fm$call$data)
+
+
+  # capture and normalise model terms
+  if(!.captured){
+
+    ECs_expr <- rlang::enexpr(ECs)
+
+    ECs <- capture_ecs(
+      ECs = ECs_expr,
+      data = .df
+    )
+
+    G <- normalise_expr(
+      rlang::enexpr(G)
+    )
+
+    E <- normalise_expr(
+      rlang::enexpr(E)
+    )
+
+    M <- normalise_expr(
+      rlang::enexpr(M)
+    )
+
+    if(!is.null(trial)){
+      trial <- normalise_expr(
+        rlang::enexpr(trial)
+      )
+    }
+
+    if(!rlang::is_missing(ecs_in_bline_model)){
+
+      ecs_expr <- rlang::enexpr(
+        ecs_in_bline_model
+      )
+
+      ecs_in_bline_model <- capture_ecs(
+        ECs = ecs_expr,
+        data = .df
+      )
+    }
+
+  } else {
+
+    G <- normalise_expr(G)
+    E <- normalise_expr(E)
+    M <- normalise_expr(M)
+
+    if(!is.null(trial)){
+      trial <- normalise_expr(trial)
+    }
+
+  }
+
+
   # Error handling for input arguments
 
   # Check if fm is provided and is a valid asreml model object
@@ -726,9 +800,13 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
   if (missing(ECs) || is.null(ECs)) {
     stop("Error: The argument 'ECs' (environmental covariates) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_quosures(ECs)) {
-    stop("Error: The argument 'ECs' must be a list of quosures.")
-  }
+  # if (!rlang::is_quosures(ECs)) {
+  #   stop("Error: The argument 'ECs' must be a list of quosures.")
+  # }
+
+  if (missing(ECs) || is.null(ECs)) {
+  stop("Error: The argument 'ECs' must be provided.")
+}
 
   # Check if G, E, and M are provided and are expressions
   if (missing(G) || is.null(G)) {
@@ -788,8 +866,6 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
     }
   }
 
-  df  <- base::eval(fm$call$data)
-
   # Turn all the relevant inputs into expressions (except for trial)
   # G <- rlang::enexpr(G)
   # E <- rlang::enexpr(E)
@@ -848,7 +924,9 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
     tryCatch({
       ec_cv_temp <- ec_single(.fm = fm, .ec = ec_curr, .G = G, .E = E,
                               .M = M, .trial = trial, .env_cv_df = env_cv_df,
-                              .cores = cores, .kn = kn, .ecs_in_bline_model = quo_ecs_bl)
+                              .cores = cores, .kn = kn,
+                              .ecs_in_bline_model = quo_ecs_bl,
+                              .captured=TRUE)
     }, error = function(e) {
       stop(paste("Error during cross-validation for environmental covariate '", ec_curr, "': ", e$message, sep = ""))
     })

@@ -14,7 +14,8 @@ ec_finder(
   cores = 2,
   kn = 10,
   trial = NULL,
-  ecs_in_bline_model = rlang::quos(NULL)
+  ecs_in_bline_model = rlang::quos(NULL),
+  .captured = FALSE
 )
 }
 \arguments{

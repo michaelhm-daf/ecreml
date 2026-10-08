@@ -48,13 +48,13 @@
 #'   na.action=na.method(x='include'),
 #'   maxit=30, workspace="1Gb")
 #' # Calculate the (average) root mean square error of prediction (rmsep)
-#' baseline_rmsep <- rmsep_calc(.fm=baseline_asr, .G=rlang::expr(Genotype), .E=rlang::expr(Env), .M=rlang::expr(density),
+#' baseline_rmsep <- rmsep_calc(.fm=basload_all()eline_asr, .G=rlang::expr(Genotype), .E=rlang::expr(Env), .M=rlang::expr(density),
 #'                   .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
 #' baseline_rmsep$Rmsep
 #' @export
 rmsep_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
-                      .cores=2, .kn=10, .ecs_in_bline_model=rlang::quos(NULL)){
-
+                      .cores=2, .kn=10, .ecs_in_bline_model=rlang::quos(NULL),
+                      .captured=FALSE){
 
   # Error handling for input arguments
 
@@ -70,25 +70,12 @@ rmsep_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   if (missing(.G) || is.null(.G)) {
     stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_expression(.G)) {
-    stop("Error: The argument '.G' must be a valid R expression.")
-  }
+
 
   if (missing(.E) || is.null(.E)) {
     stop("Error: The argument '.E' (environment term) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_expression(.E)) {
-    stop("Error: The argument '.E' must be a valid R expression.")
-  }
 
-  if (!is.null(.M) && !rlang::is_expression(.M)) {
-    stop("Error: The argument '.M' (management practice term) must be a valid R expression if provided.")
-  }
-
-  # Check if .trial is an expression if provided
-  if (!is.null(.trial) && !rlang::is_expression(.trial)) {
-    stop("Error: The argument '.trial' must be a valid R expression if provided.")
-  }
 
   # Check if .env_cv_df is a data frame if provided
   if (!is.null(.env_cv_df) && !is.data.frame(.env_cv_df)) {
@@ -118,6 +105,42 @@ rmsep_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
     stop("Error: The data frame used in the baseline model could not be retrieved or is not valid.")
   }
 
+  # Convert model terms
+  if(!.captured){
+
+    .G <- normalise_expr(
+      rlang::enexpr(.G)
+    )
+
+    .E <- normalise_expr(
+      rlang::enexpr(.E)
+    )
+
+    if(!is.null(.M)){
+      .M <- normalise_expr(
+        rlang::enexpr(.M)
+      )
+    }
+
+    if(!is.null(.trial)){
+      .trial <- normalise_expr(
+        rlang::enexpr(.trial)
+      )
+    }
+
+  } else {
+
+    .G <- normalise_expr(.G)
+    .E <- normalise_expr(.E)
+
+    if(!is.null(.M)){
+      .M <- normalise_expr(.M)
+    }
+
+    if(!is.null(.trial)){
+      .trial <- normalise_expr(.trial)
+    }
+  }
 
   # Now also round all continuous variables in df to 4 decimal places to avoid errors later on due to merging of data frames
   .df <- .df %>% purrr::modify_if(is.numeric, round, digits=4)
@@ -131,7 +154,6 @@ rmsep_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   # ADD AN ERROR MESSAGE IF AT() HAS LEVELS NUMBERED INSTEAD OF STATED!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  #.ecs_in_bline_model <- enexpr(.ecs_in_bline_model)
 
   # Identify the EC variables that are present in the baseline model
   vars_ec_bl <- as.list(magrittr::set_names(seq_along(.df), names(.df)))
@@ -503,7 +525,66 @@ rmsep_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' ec1_model_asr$rmsep
 #' @export
 ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL,
-                         ecs_in_bline_model=rlang::maybe_missing(), denDF="numeric"){
+                         ecs_in_bline_model=rlang::maybe_missing(),
+                         denDF="none", .captured=FALSE){
+
+  # Identify the data frame from the model
+  .df <<- base::eval(fm$call$data)
+
+  # Check if the data frame is valid
+  if (is.null(.df) || !is.data.frame(.df)) {
+    stop("Error: The data frame used in the model could not be retrieved or is not valid.")
+  }
+
+
+  # capture and normalise model terms
+  if(!.captured){
+
+    ECs_expr <- rlang::enexpr(ECs)
+
+    ECs <- capture_ecs(
+      ECs = ECs_expr,
+      data = .df
+    )
+
+    G <- normalise_expr(
+      rlang::enexpr(G)
+    )
+
+    E <- normalise_expr(
+      rlang::enexpr(E)
+    )
+
+    M <- normalise_expr(
+      rlang::enexpr(M)
+    )
+
+    trial <- normalise_expr(
+        rlang::enexpr(trial)
+    )
+
+    if(!rlang::is_missing(ecs_in_bline_model)){
+
+      ecs_expr <- rlang::enexpr(
+        ecs_in_bline_model
+      )
+
+      ecs_in_bline_model <- capture_ecs(
+        ECs = ecs_expr,
+        data = .df
+      )
+    }
+
+  } else {
+
+    G <- normalise_expr(G)
+    E <- normalise_expr(E)
+    M <- normalise_expr(M)
+    trial <- normalise_expr(trial)
+
+  }
+
+
   # Error handling for input arguments
 
   # Check if fm is provided and is a valid asreml model object
@@ -514,34 +595,18 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
     stop("Error: The argument 'fm' (baseline model) must be a valid asreml model object.")
   }
 
-  # Check if ECs is provided and is a list of quosures
-  if (missing(ECs) || is.null(ECs)) {
-    stop("Error: The argument 'ECs' (environmental covariates) must be provided and cannot be NULL.")
-  }
-  if (!rlang::is_quosures(ECs)) {
-    stop("Error: The argument 'ECs' (environmental covariates) must be a list of quosures.")
-  }
 
   # Check if G, E, and M are provided and are expressions
   if (missing(G) || is.null(G)) {
     stop("Error: The argument 'G' (genotype term) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_expression(G)) {
-    stop("Error: The argument 'G' (genotype term) must be a valid R expression.")
-  }
 
   if (missing(E) || is.null(E)) {
     stop("Error: The argument 'E' (environment term) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_expression(E)) {
-    stop("Error: The argument 'E'(environment term) must be a valid R expression.")
-  }
 
   if (missing(M) || is.null(M)) {
     stop("Error: The argument 'M' (management practice term) must be provided and cannot be NULL.")
-  }
-  if (!rlang::is_expression(M)) {
-    stop("Error: The argument 'M' (management practice term) must be a valid R expression.")
   }
 
   # Check if trial is an expression if provided
@@ -595,28 +660,15 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
   # M <- enexpr(M)
   #trial <- enexpr(trial)
 
-  # Identify the data frame from the model
-  .df <<- base::eval(fm$call$data)
-
-  # Check if the data frame is valid
-  if (is.null(.df) || !is.data.frame(.df)) {
-    stop("Error: The data frame used in the model could not be retrieved or is not valid.")
-  }
-
-  # Put ECs in a quosure
-  #quo_ecs <- rlang::enquos(ECs)
-
-  #quo_ecs <- rlang::quos(PrePAW:PostPAW, PreCumRad)
-
   # Check if the columns corresponding to ECs exist in the data frame
   vars <- as.list(magrittr::set_names(seq_along(.df), names(.df)))
   cols_ecs <- unlist(purrr::map(ECs, rlang::eval_tidy, vars))
-  if (length(cols_ecs) == 0) {
-    stop("Error: The 'ECs' argument does not contain any valid environmental covariates.")
-  }
-  if (any(is.na(cols_ecs))) {
-    stop("Error: One or more environmental covariates in 'ECs' do not exist in the data frame used in the model.")
-  }
+  # if (length(cols_ecs) == 0) {
+  #   stop("Error: The 'ECs' argument does not contain any valid environmental covariates.")
+  # }
+  # if (any(is.na(cols_ecs))) {
+  #   stop("Error: One or more environmental covariates in 'ECs' do not exist in the data frame used in the model.")
+  # }
   # Use the columns to obtain a vector of EC terms
   ec_terms_char <- colnames(.df[cols_ecs])
 
@@ -640,8 +692,11 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
   }
 
 
-  rmsep_curr <- rmsep_calc(.fm= curr_fm, .G=G, .E=E, .M=M, .trial=trial, .env_cv_df = env_cv_df,
-                         .cores=ncores, .kn=kn, .ecs_in_bline_model=ecs_in_bline_model)$Rmsep
+  rmsep_curr <- rmsep_calc(.fm= curr_fm, .G=G, .E=E, .M=M, .trial=trial,
+                           .env_cv_df = env_cv_df,
+                         .cores=ncores, .kn=kn,
+                         .ecs_in_bline_model=ecs_in_bline_model,
+                         .captured=TRUE)$Rmsep
 
   # Remove cv_group from .df if it exists to stop bugs from happening
   if(length(which(colnames(.df)=="cv_group"))>0){
@@ -654,7 +709,8 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
                          M= M, trial = trial,
                          env_cv_df=env_cv_df,
                          ecs_in_bline_model=ecs_in_bline_model,
-                         cores=ncores, kn=kn)
+                         cores=ncores, kn=kn,
+                         .captured=TRUE)
 
   # Determine the candidate EC model
   ec_summary <- ec_search$summary_ecs
@@ -671,7 +727,9 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
       ec_candidate <- rlang::parse_expr(ec_candid)
       # First define the model with every EC term for the candidate EC
       tryCatch({
-        candid_fm <- ec_full_model_constructor(.fm = curr_fm, .ec = ec_candidate, .G = G, .M = M, .kn = kn)
+        candid_fm <- ec_full_model_constructor(.fm = curr_fm,
+                        .ec = ec_candidate, .G = G, .M = M, .kn = kn,
+                        .captured=TRUE)
       }, error = function(e) {
         stop("Error during candidate model construction: ", e$message)
       })
@@ -681,7 +739,8 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
       # Remove non-significant fixed and random effects for the ECs in the candidate model
       tryCatch({
         candid_fm <- simplify_ec_model(.fm = candid_fm, .ecs_in_model = ecs_in_candidate, .G = rlang::expr_text(G),
-                                       .M = rlang::expr_text(M), denDF = denDF, .kn=kn)
+                                       .M = rlang::expr_text(M),
+                                       denDF = denDF, .kn=kn, .captured = TRUE)
       }, error = function(e) {
         stop("Error during model simplification: ", e$message)
       })
@@ -689,8 +748,11 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
       ec_candidate_bl <- rlang::parse_quos(c(ec_bl_terms_char, ec_candid), rlang::current_env())
       # Calculate the RMSEP of the simplified model
       tryCatch({
-        rmsep_candid <- rmsep_calc(.fm = candid_fm, .G = G, .E = E, .M = M, .trial = trial, .env_cv_df = env_cv_df,
-                                 .cores = ncores, .kn = kn, .ecs_in_bline_model = ec_candidate_bl)$Rmsep
+        rmsep_candid <- rmsep_calc(.fm = candid_fm, .G = G, .E = E, .M = M,
+                                   .trial = trial, .env_cv_df = env_cv_df,
+                                 .cores = ncores, .kn = kn,
+                                 .ecs_in_bline_model = ec_candidate_bl,
+                                 .captured=TRUE)$Rmsep
       }, error = function(e) {
         stop("Error during RMSEP calculation: ", e$message)
       })
@@ -779,7 +841,71 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
 #' ec_model_asr$fm$call
 #' ec_model_asr$rmsep
 #' @export
-ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL, ecs_in_bline_model=rlang::maybe_missing(), denDF="numeric"){
+ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL
+                   , ecs_in_bline_model=rlang::maybe_missing(), denDF="none",
+                   .captured=FALSE){
+
+
+    # Identify the data frame from the model
+  .df <<- base::eval(fm$call$data)
+
+
+  # Check if the data frame is valid
+  if (is.null(.df) || !is.data.frame(.df)) {
+    stop("Error: The data frame used in the model could not be retrieved or is not valid.")
+  }
+
+
+    # Convert inputs
+  if(!.captured){
+
+    # Capture ECs
+    ECs_expr <- rlang::enexpr(ECs)
+
+    ECs <- capture_ecs(
+      ECs = ECs_expr,
+      data = .df
+    )
+
+    # Capture model terms
+    G <- normalise_expr(
+      rlang::enexpr(G)
+    )
+
+    E <- normalise_expr(
+      rlang::enexpr(E)
+    )
+
+    M <- normalise_expr(
+      rlang::enexpr(M)
+    )
+
+    trial <- normalise_expr(
+      rlang::enexpr(trial)
+    )
+
+
+    # Capture baseline ECs
+    if(!rlang::is_missing(ecs_in_bline_model)){
+
+      ecs_bl_expr <- rlang::enexpr(
+        ecs_in_bline_model
+      )
+
+      ecs_in_bline_model <- capture_ecs(
+        ECs = ecs_bl_expr,
+        data = .df
+      )
+    }
+
+  } else {
+
+    G <- normalise_expr(G)
+    E <- normalise_expr(E)
+    M <- normalise_expr(M)
+    trial <- normalise_expr(trial)
+
+  }
 
   # Error handling for input arguments
 
@@ -795,31 +921,20 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL
   if (missing(ECs) || is.null(ECs)) {
     stop("Error: The argument 'ECs' (environmental covariates) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_quosures(ECs)) {
-    stop("Error: The argument 'ECs' (environmental covariates) must be a list of quosures.")
-  }
 
   # Check if G, E, and M are provided and are expressions
   if (missing(G) || is.null(G)) {
     stop("Error: The argument 'G' (genotype term) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_expression(G)) {
-    stop("Error: The argument 'G' (genotype term) must be a valid R expression.")
-  }
 
   if (missing(E) || is.null(E)) {
     stop("Error: The argument 'E' (environment term) must be provided and cannot be NULL.")
-  }
-  if (!rlang::is_expression(E)) {
-    stop("Error: The argument 'E' (environment term) must be a valid R expression.")
   }
 
   if (missing(M) || is.null(M)) {
     stop("Error: The argument 'M' (management practice term) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_expression(M)) {
-    stop("Error: The argument 'M' (management practice term) must be a valid R expression.")
-  }
+
 
   # Check if trial is an expression if provided
   if (!is.null(trial) && !rlang::is_expression(trial)) {
@@ -852,23 +967,8 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL
   }
 
 
-  # Identify the data frame from the model
-  .df <<- base::eval(fm$call$data)
-
-
-  # Check if the data frame is valid
-  if (is.null(.df) || !is.data.frame(.df)) {
-    stop("Error: The data frame used in the model could not be retrieved or is not valid.")
-  }
-
-
   # Define the current model to be the initial model
   curr_fm <- fm
-
-  # Put ECs in a quosure
-  #quo_ecs <- rlang::enquos(ECs)
-
-  #quo_ecs <- rlang::quos(PrePAW:PostPAW, PreCumRad)
 
   # Define a term that keeps track of whether to keep searching for ECs
   continue_ec_search <- TRUE
@@ -918,17 +1018,22 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL
 
   # Run the algorithm for a single iteration to calculate the INITIAL RMSEP
   tryCatch({
-    curr_rmsep <- rmsep_calc(.fm = curr_fm, .G = G, .E = E, .M = M, .trial = trial, .env_cv_df = env_cv_df,
-                           .cores = ncores, .kn = kn, .ecs_in_bline_model = ecs_in_bline_model)$Rmsep
+    curr_rmsep <- rmsep_calc(.fm = curr_fm, .G = G, .E = E, .M = M,
+                             .trial = trial, .env_cv_df = env_cv_df,
+                           .cores = ncores, .kn = kn,
+                           .ecs_in_bline_model = ecs_in_bline_model,
+                           .captured=TRUE)$Rmsep
   }, error = function(e) {
     stop("Error during initial RMSEP calculation: ", e$message)
   })
 
   while(continue_ec_search==TRUE){
     tryCatch({
-      ec_iter <- ec_iteration(fm = curr_fm, ECs = ecs_to_select_from, G = G, E = E, M = M, env_cv_df = env_cv_df,
+      ec_iter <- ec_iteration(fm = curr_fm, ECs = ecs_to_select_from,
+                              G = G, E = E, M = M, env_cv_df = env_cv_df,
                               ncores = ncores, kn = kn, trial = trial,
-                              ecs_in_bline_model = ecs_in_curr_bl_model, denDF = denDF)
+                              ecs_in_bline_model = ecs_in_curr_bl_model,
+                              denDF = denDF, .captured=TRUE)
     }, error = function(e) {
       stop("Error during environmental covariate iteration: ", e$message)
     })
@@ -943,7 +1048,8 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL
       col_candid_ec <- unlist(vars[ec_iter$selected_ec])
       # Update ECs in current (baseline?!) model
       cols_bl_ecs <- c(cols_bl_ecs, col_candid_ec)
-      ecs_in_curr_bl_model <- rlang::parse_quos(names(vars[cols_bl_ecs]), env=rlang::current_env())
+      ecs_in_curr_bl_model <- rlang::parse_quos(names(vars[cols_bl_ecs]),
+                                                env=rlang::current_env())
       # Remove selected EC from list of candidate ECs to choose from in the next iteration
       cols_ecs <- cols_ecs[cols_ecs!=col_candid_ec]
       # If statement to finish the model if there are no more ECs to choose from
@@ -951,7 +1057,8 @@ ec_all <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, trial=NULL
         break
       }
       # Update the quosure of ECs to select from for the next iteration
-      ecs_to_select_from <- rlang::parse_quos(names(vars[cols_ecs]), env=rlang::current_env()) # Check if environment is correct for functions
+      ecs_to_select_from <- rlang::parse_quos(names(vars[cols_ecs]),
+                                              env=rlang::current_env()) # Check if environment is correct for functions
     } else {
       continue_ec_search <- FALSE
     }

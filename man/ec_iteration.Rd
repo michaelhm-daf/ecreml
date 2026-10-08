@@ -15,7 +15,8 @@ ec_iteration(
   kn = 10,
   trial = NULL,
   ecs_in_bline_model = rlang::maybe_missing(),
-  denDF = "numeric"
+  denDF = "none",
+  .captured = FALSE
 )
 }
 \arguments{
