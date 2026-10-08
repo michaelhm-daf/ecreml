@@ -18,6 +18,7 @@
 #' @param .kn The number of knot points for the spline component of the model for the environment covariate being tested.
 #' Note that this is ignored of the environmental covariate is a factor
 #' @param .ecs_in_bline_model An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.
+#' @param .captured A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.
 #'
 #' @return A list with components:
 #' \itemize{
@@ -33,23 +34,21 @@
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model
-#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
-#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
-#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-#'    at(Trial,'Breeza 1'):Column +
-#'    Trial + Env +
-#'    spl(density, k=10) + spl(density, k=10):Genotype +
-#'    str(~Trial:Genotype + Trial:Genotype:density,
-#'        ~corh(2):id(48)) +
-#'    str(~Env:Genotype + Env:Genotype:density,
-#'        ~corh(2):id(136)),
-#'   residual=~ dsum(~units|ResidualTOS),
-#'   data = SorghumYield,
-#'   na.action=na.method(x='include'),
-#'   maxit=30, workspace="1Gb")
+#' baseline_asr <- asreml(
+#'  fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+#'  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'   Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+#'   Env + Env:Genotype + Env:Genotype:TargetPop,
+#'  residual=~ dsum(~units|Env),
+#'  data = SorghumYield)
 #' # Calculate the (average) root mean square error of prediction (rmsep)
-#' baseline_rmsep <- rmsep_calc(.fm=basload_all()eline_asr, .G=rlang::expr(Genotype), .E=rlang::expr(Env), .M=rlang::expr(density),
-#'                   .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
+#' baseline_rmsep <- rmsep_calc(.fm=baseline_asr,
+#'  .G = Genotype,
+#'  .E = Env,
+#'  .M = TargetPop,
+#'  .trial = Trial,
+#'  .env_cv_df = SorghumCvGroup)
 #' baseline_rmsep$Rmsep
 #' @export
 rmsep_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
@@ -489,6 +488,7 @@ rmsep_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' @param ecs_in_bline_model An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.
 #' @param denDF A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
 #' Options include \code{none}, \code{algebraic} or \code{numeric}.
+#' @param .captured A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.
 #'
 #' @return A list with 2 components:
 #' \itemize{
@@ -502,24 +502,23 @@ rmsep_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model
-#' baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
-#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
-#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-#'    at(Trial,'Breeza 1'):Column +
-#'    Trial + Env +
-#'    spl(density, k=10) + spl(density, k=10):Genotype +
-#'    str(~Trial:Genotype + Trial:Genotype:density,
-#'        ~corh(2):id(48)) +
-#'    str(~Env:Genotype + Env:Genotype:density,
-#'        ~corh(2):id(136)),
-#'   residual=~ dsum(~units|ResidualTOS),
-#'   data = SorghumYield,
-#'   na.action=na.method(x='include'),
-#'   maxit=30, workspace="1Gb")
-#'   ec1_model_asr <- ec_iteration(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreFlwEvap),
-#'       G= rlang::expr(Genotype), E = rlang::expr(Env),
-#'       M= rlang::expr(density), trial = rlang::expr(Trial),
-#'       env_cv_df=SorghumCvGroup)
+#' baseline_asr <- asreml(
+#'  fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+#'  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'   Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+#'   Env + Env:Genotype + Env:Genotype:TargetPop,
+#'  residual=~ dsum(~units|Env),
+#'  data = SorghumYield)
+#'
+#' ec1_model_asr <- ec_iteration(fm = baseline_asr,
+#'   ECs = c(PrePAW:PostPAW, PreFlwEvap),
+#'       G = Genotype,
+#'       E = Env,
+#'       M = TargetPop,
+#'       trial = Trial,
+#'       env_cv_df = SorghumCvGroup)
+#'
 #' ec1_model_asr$selected_ec
 #' ec1_model_asr$fm$call
 #' ec1_model_asr$rmsep
@@ -806,6 +805,7 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
 #' @param ecs_in_bline_model An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.
 #' @param denDF A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
 #' Options include \code{none}, \code{algebraic} or \code{numeric}.
+#' @param .captured A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.
 #'
 #' @return A list with 2 components:
 #' \itemize{
@@ -819,25 +819,22 @@ ec_iteration <- function(fm, ECs, G, E, M, env_cv_df=NULL, ncores=2, kn=10, tria
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model
-#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
-#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
-#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-#'    at(Trial,'Breeza 1'):Column +
-#'    Trial + Env +
-#'    spl(density, k=10) + spl(density, k=10):Genotype +
-#'    str(~Trial:Genotype + Trial:Genotype:density,
-#'        ~corh(2):id(48)) +
-#'    str(~Env:Genotype + Env:Genotype:density,
-#'        ~corh(2):id(136)),
-#'   residual=~ dsum(~units|ResidualTOS),
-#'   data = SorghumYield,
-#'   na.action=na.method(x='include'),
-#'   maxit=30, workspace="1Gb")
+#' baseline_asr <- asreml(
+#'  fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+#'  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'   Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+#'   Env + Env:Genotype + Env:Genotype:TargetPop,
+#'  residual=~ dsum(~units|Env),
+#'  data = SorghumYield)
 #' # Expect this next line of code to take 5-10 minutes to run on your machine
-#' ec_model_asr <- ec_all(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreFlwEvap),
-#'        G= rlang::expr(Genotype), E = rlang::expr(Env),
-#'        M= rlang::expr(density), trial = rlang::expr(Trial),
-#'        env_cv_df=SorghumCvGroup, kn=6)
+#' ec_model_asr <- ec_all(fm = baseline_asr,
+#'   ECs = c(PrePAW:PostPAW, PreFlwEvap),
+#'   G = Genotype,
+#'   E = Env,
+#'   M = TargetPop,
+#'   trial = Trial,
+#'   env_cv_df = SorghumCvGroup)
 #' ec_model_asr$fm$call
 #' ec_model_asr$rmsep
 #' @export

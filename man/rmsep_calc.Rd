@@ -40,6 +40,8 @@ Also note that by setting this greater than 2 (i.e. the default) will require ad
 Note that this is ignored of the environmental covariate is a factor}
 
 \item{.ecs_in_bline_model}{An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.}
+
+\item{.captured}{A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.}
 }
 \value{
 A list with components:
@@ -62,22 +64,20 @@ library(foreach)
 data(SorghumYield)
 data(SorghumCvGroup)
 # Run baseline model
-baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
-  random =~ at(Trial):Rep  + at(Trial):MainPlot +
-   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-   at(Trial,'Breeza 1'):Column +
-   Trial + Env +
-   spl(density, k=10) + spl(density, k=10):Genotype +
-   str(~Trial:Genotype + Trial:Genotype:density,
-       ~corh(2):id(48)) +
-   str(~Env:Genotype + Env:Genotype:density,
-       ~corh(2):id(136)),
-  residual=~ dsum(~units|ResidualTOS),
-  data = SorghumYield,
-  na.action=na.method(x='include'),
-  maxit=30, workspace="1Gb")
+baseline_asr <- asreml(
+ fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+ random =~ at(Trial):Rep  + at(Trial):MainPlot +
+  at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+  Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+  Env + Env:Genotype + Env:Genotype:TargetPop,
+ residual=~ dsum(~units|Env),
+ data = SorghumYield)
 # Calculate the (average) root mean square error of prediction (rmsep)
-baseline_rmsep <- rmsep_calc(.fm=basload_all()eline_asr, .G=rlang::expr(Genotype), .E=rlang::expr(Env), .M=rlang::expr(density),
-                  .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
+baseline_rmsep <- rmsep_calc(.fm=baseline_asr,
+ .G = Genotype,
+ .E = Env,
+ .M = TargetPop,
+ .trial = Trial,
+ .env_cv_df = SorghumCvGroup)
 baseline_rmsep$Rmsep
 }

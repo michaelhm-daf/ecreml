@@ -47,6 +47,8 @@ Note that this is ignored of the environmental covariate is a factor}
 
 \item{aliased}{Type logical with default set to FALSE. An option that enables aliased predictions from \code{predict.asreml} to be outputted.
 We do not recommend setting this option to TRUE. As its inclusion in only for debugging purposes.}
+
+\item{.captured}{A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.}
 }
 \value{
 A list with components:
@@ -71,22 +73,23 @@ library(foreach)
 data(SorghumYield)
 data(SorghumCvGroup)
 # Run baseline model
-baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
-  random =~ at(Trial):Rep  + at(Trial):MainPlot +
-   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-   at(Trial,'Breeza 1'):Column +
-   Trial + Env +
-   spl(density, k=10) + spl(density, k=6):Genotype +
-   str(~Trial:Genotype + Trial:Genotype:density,
-       ~corh(2):id(48)) +
-   str(~Env:Genotype + Env:Genotype:density,
-       ~corh(2):id(136)),
-  residual=~ dsum(~units|ResidualTOS),
-  data = SorghumYield,
-  na.action=na.method(x='include'),
-  maxit=30, workspace="1Gb")
- ec_rmsep_summary <- ec_single(.fm=baseline_asr, .ec=rlang::expr(PrePAW), .G =rlang::expr(Genotype), .E = rlang::expr(Env),
-                   .M = rlang::expr(density), .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
+baseline_asr <- asreml(
+ fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+ random =~ at(Trial):Rep  + at(Trial):MainPlot +
+  at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+  Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+  Env + Env:Genotype + Env:Genotype:TargetPop,
+ residual=~ dsum(~units|Env),
+ data = SorghumYield)
+
+ ec_rmsep_summary <- ec_single(.fm = baseline_asr,
+ .ec= PrePAW ,
+ .G = Genotype,
+ .E = Env,
+ .M = TargetPop,
+ .trial = Trial,
+ .env_cv_df=SorghumCvGroup)
+
  ec_rmsep_summary$Rmsep
 
 }

@@ -587,30 +587,31 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="none", ssT
 #' @param .G An expression indicating which term in the model is the genotype component.
 #' @param .M An expression indicating which term in the model is the management practice component.
 #' @param .kn  The number of knot points to be included for the spline terms related to the environmental covariate \code{.ec} being added to the model.
+#' @param .captured A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.
 #'
 #' @return An asreml model object with all of the fixed and random terms related to the environmental covariate \code{.ec} being added to the model.
 #' @examples
 #' library(asreml)
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
-#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
-#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
-#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-#'    at(Trial,'Breeza 1'):Column +
-#'    Trial + Env +
-#'    spl(density, k=6) + spl(density, k=6):Genotype +
-#'    str(~Trial:Genotype + Trial:Genotype:density,
-#'        ~corh(2):id(48)) +
-#'    str(~Env:Genotype + Env:Genotype:density,
-#'        ~corh(2):id(136)),
-#'   residual=~ dsum(~units|ResidualTOS),
-#'   data = SorghumYield,
-#'   na.action=na.method(x='include'),
-#'   maxit=30, workspace="1Gb")
-#' postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
+#' baseline_asr <- asreml(
+#'  fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+#'  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'   Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+#'   Env + Env:Genotype + Env:Genotype:TargetPop,
+#'  residual=~ dsum(~units|Env),
+#'  data = SorghumYield)
+#'
+#' postPAW_full_asr <-  ec_full_model_constructor( .fm = baseline_asr,
+#'   .ec = PostPAW,
+#'   .G= Genotype ,
+#'   .M= TargetPop )
+#'
 #' postPAW_full_asr$call
 #' @export
-ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=10, .captured=FALSE){
+ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=10,
+                                      .captured=FALSE){
   # Error handling for input arguments
 
   if(!.captured){
