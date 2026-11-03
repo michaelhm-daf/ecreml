@@ -208,7 +208,7 @@ rmsep_calc <- function(.fm, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 
   # Use foreach to perform parallel programming when implementing the cross validation scheme
   cv_pred <- foreach::foreach(i=c(1:v), .combine=rbind,
-                              .packages=c("asreml", "ASExtras4", "tidyverse","rlang")) %dopar% {
+                              .packages=c("asreml", "tidyverse","rlang")) %dopar% {
 
                                 # Create a subsetted version of the data frame
                                 subset_df <-  .df[!.df$cv_group%in%levels(.df$cv_group)[i],]

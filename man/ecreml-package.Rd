@@ -19,5 +19,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Michael Mumford \email{Michael.Mumford@dpi.qld.gov.au} (\href{https://orcid.org/0000-0002-5037-8680}{ORCID})
 
+Authors:
+\itemize{
+  \item Michael Mumford \email{Michael.Mumford@dpi.qld.gov.au} (\href{https://orcid.org/0000-0002-5037-8680}{ORCID})
+}
+
 }
 \keyword{internal}

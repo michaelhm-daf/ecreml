@@ -146,9 +146,9 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial = NULL, .env_cv_df=NULL,
     .ec <- normalise_expr(rlang::enexpr(.ec))
   }
 
-  cat("Inside ec_single:\n")
-  print(.E)
-  print(rlang::expr_text(.E))
+  # cat("Inside ec_single:\n")
+  # print(.E)
+  # print(rlang::expr_text(.E))
 
   # Error handling for input arguments
 

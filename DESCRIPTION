@@ -1,6 +1,6 @@
 Package: ecreml
 Title: Incorporates ECs into the analysis of agricultural trial data containing GxExM interactions
-Version: 0.2.000
+Version: 0.2.002
 Authors@R: 
     person("Michael", "Mumford", , "Michael.Mumford@dpi.qld.gov.au", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-5037-8680"))
@@ -12,7 +12,6 @@ Description: This R-package complements the statistical methodology outlined in 
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Imports:
     doParallel (>= 1.0.17),
     dplyr (>= 1.1.2),
@@ -49,3 +48,4 @@ Depends:
 Config/testthat/edition: 3
 VignetteBuilder: 
 	quarto
+Config/roxygen2/version: 8.0.0
