@@ -20,6 +20,7 @@
 #' @param .ecs_in_model A list of expressions such that each expression is an environmental covariate that is present in the current model.
 #' @param .G The genotype term in the model as a character
 #' @param .M The management practice term in the model a character
+#' @param .captured A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.
 #'
 #' @return An updated asreml model such that the continuous non-significant environmental covariate spline and management terms have been removed from the model.
 #'
@@ -28,67 +29,82 @@
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model
-#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
-#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
-#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-#'    at(Trial,'Breeza 1'):Column +
-#'    Trial + Env +
-#'    spl(density, k=6) + spl(density, k=6):Genotype +
-#'    str(~Trial:Genotype + Trial:Genotype:density,
-#'        ~corh(2):id(48)) +
-#'    str(~Env:Genotype + Env:Genotype:density,
-#'        ~corh(2):id(136)),
-#'   residual=~ dsum(~units|ResidualTOS),
-#'   data = SorghumYield,
-#'   na.action=na.method(x='include'),
-#'   maxit=30, workspace="1Gb")
-#' postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
-#' random_simplify_asr <- ec_random_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
-#' random_simplify_asr$call
+#' baseline_asr <- asreml(
+#'  fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+#'  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'   Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+#'   Env + Env:Genotype + Env:Genotype:TargetPop,
+#'  residual=~ dsum(~units|Env),
+#'  data = SorghumYield)
+#'
+#' postPAW_full_asr <-  ec_full_model_constructor( .fm = baseline_asr,
+#'   .ec = PostPAW,
+#'   .G= Genotype ,
+#'   .M= TargetPop )
+#'
+#' simplify_random_model_asr <- ec_random_model(.fm = postPAW_full_asr,
+#'   .ecs_in_model = PostPAW,
+#'   .G = Genotype,
+#'   .M = TargetPop)
+#'
+#' simplify_random_model_asr$call
 #' @export
-ec_random_model <- function(.fm, .ecs_in_model, .G, .M, .kn=10){
+ec_random_model <- function(.fm, .ecs_in_model, .G, .M, .kn=10,
+                            .captured = FALSE){
 
-  # Error handling for input arguments
 
-  # Check if .fm is provided and is a valid asreml model object
+  # Check model first because we need the data frame
   if (missing(.fm) || is.null(.fm)) {
     stop("Error: The argument '.fm' (current model) must be provided and cannot be NULL.")
   }
+
   if (!inherits(.fm, "asreml")) {
     stop("Error: The argument '.fm' must be a valid asreml model object.")
   }
 
-  # Check if .ecs_in_model is provided and is a list of expressions
-  if (missing(.ecs_in_model) || is.null(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be provided and cannot be NULL.")
-  }
-  if (!rlang::is_quosures(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' must be a list of expressions (quosures).")
-  }
+  # Obtain the data frame from the model
+  .df <<- base::eval(.fm$call$data)
 
-  # Check if .G is provided and is a character
-  if (missing(.G) || is.null(.G)) {
-    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.G) || length(.G) != 1) {
-    stop("Error: The argument '.G' must be a single character string.")
-  }
+  # Convert EC inputs
+  if(!.captured){
 
-  # Check if .M is provided and is a character
-  if (missing(.M) || is.null(.M)) {
-    stop("Error: The argument '.M' (management practice term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.M) || length(.M) != 1) {
-    stop("Error: The argument '.M' must be a single character string.")
+    ecs_expr <- rlang::enexpr(.ecs_in_model)
+
+    .ecs_in_model <- capture_ecs(
+      ECs = ecs_expr,
+      data = .df
+    )
+
+    .G <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.G)
+      )
+    )
+
+    .M <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.M)
+      )
+    )
+
+  } else {
+
+    if(!rlang::is_quosures(.ecs_in_model)){
+
+      .ecs_in_model <- capture_ecs(
+        ECs = .ecs_in_model,
+        data = .df
+      )
+
+    }
+
+    .G <- normalise_name(.G)
+    .M <- normalise_name(.M)
   }
 
   # Set global options for asreml to minimise warning messages
   asreml::asreml.options(Cfixed=TRUE)
-
-  # Obtain the data frame from the baseline model
-  .df  <<- base::eval(.fm$call$data)
-
-
 
   # Check if the data frame is valid
   if (is.null(.df) || !is.data.frame(.df)) {
@@ -364,6 +380,7 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M, .kn=10){
 #' @param .M The management practice term in the model a character
 #' @param denDF A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
 #' Options include \code{none}, \code{algebraic} or \code{numeric}.
+#' @param .captured A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.
 #'
 #' @return An updated asreml model such that the non-significant environmental covariate fixed effect terms have been removed from the model.
 #'
@@ -372,70 +389,88 @@ ec_random_model <- function(.fm, .ecs_in_model, .G, .M, .kn=10){
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model
-#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
-#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
-#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-#'    at(Trial,'Breeza 1'):Column +
-#'    Trial + Env +
-#'    spl(density, k=6) + spl(density, k=6):Genotype +
-#'    str(~Trial:Genotype + Trial:Genotype:density,
-#'        ~corh(2):id(48)) +
-#'    str(~Env:Genotype + Env:Genotype:density,
-#'        ~corh(2):id(136)),
-#'   residual=~ dsum(~units|ResidualTOS),
-#'   data = SorghumYield,
-#'   na.action=na.method(x='include'),
-#'   maxit=30, workspace="1Gb")
-#' postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
-#' random_simplify_asr <- ec_random_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
-#' fixed_simplify_asr <- ec_fixed_model(.fm=random_simplify_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
-#' fixed_simplify_asr$call
+#' baseline_asr <- asreml(
+#'  fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+#'  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'   Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+#'   Env + Env:Genotype + Env:Genotype:TargetPop,
+#'  residual=~ dsum(~units|Env),
+#'  data = SorghumYield)
+#'
+#' postPAW_full_asr <-  ec_full_model_constructor( .fm = baseline_asr,
+#'   .ec = PostPAW,
+#'   .G= Genotype ,
+#'   .M= TargetPop )
+#'
+#' simplify_random_model_asr <- ec_random_model(.fm = postPAW_full_asr,
+#'   .ecs_in_model = PostPAW,
+#'   .G = Genotype,
+#'   .M = TargetPop)
+#'
+#' simplify_fixed_model_asr <- ec_fixed_model(.fm = simplify_random_model_asr,
+#'   .ecs_in_model = PostPAW,
+#'   .G = Genotype,
+#'   .M = TargetPop)
+#'
+#' simplify_fixed_model_asr$call
 #' @export
-ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
+ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none",
+                           .captured=FALSE){
 
-  # Error handling for input arguments
-
-  # Check if .fm is provided and is a valid asreml model object
+  # Check model first because we need the data frame
   if (missing(.fm) || is.null(.fm)) {
     stop("Error: The argument '.fm' (current model) must be provided and cannot be NULL.")
   }
+
   if (!inherits(.fm, "asreml")) {
     stop("Error: The argument '.fm' must be a valid asreml model object.")
   }
 
-  # Check if .ecs_in_model is provided and is a list of expressions
-  if (missing(.ecs_in_model) || is.null(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be provided and cannot be NULL.")
-  }
-  if (!rlang::is_quosures(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be a list of expressions (quosures).")
-  }
+  # Obtain the data frame from the model
+  .df <<- base::eval(.fm$call$data)
 
-  # Check if .G is provided and is a character
-  if (missing(.G) || is.null(.G)) {
-    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.G) || length(.G) != 1) {
-    stop("Error: The argument '.G' (genotype term) must be a single character string.")
-  }
+  # Convert EC inputs
+  if(!.captured){
 
-  # Check if .M is provided and is a character
-  if (missing(.M) || is.null(.M)) {
-    stop("Error: The argument '.M' (management practice term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.M) || length(.M) != 1) {
-    stop("Error: The argument '.M' (management practice term) must be a single character string.")
+    ecs_expr <- rlang::enexpr(.ecs_in_model)
+
+    .ecs_in_model <- capture_ecs(
+      ECs = ecs_expr,
+      data = .df
+    )
+
+    .G <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.G)
+      )
+    )
+
+    .M <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.M)
+      )
+    )
+
+  } else {
+
+    if(!rlang::is_quosures(.ecs_in_model)){
+
+      .ecs_in_model <- capture_ecs(
+        ECs = .ecs_in_model,
+        data = .df
+      )
+
+    }
+
+    .G <- normalise_name(.G)
+    .M <- normalise_name(.M)
   }
 
   # Check if denDF is a valid value
   if (!is.character(denDF) || !(denDF %in% c("none", "numeric", "algebraic"))) {
     stop("Error: The argument 'denDF' (denominator degrees of freedom) must be one of 'none', 'numeric', or 'algebraic'.")
   }
-
-
-  # Obtain the data frame from the baseline model
-  # Note, use super assignment to modify .df in the global environment
-  .df  <<- base::eval(.fm$call$data)
 
   # Check if the data frame is valid
   if (is.null(.df) || !is.data.frame(.df)) {
@@ -623,6 +658,7 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
 #' @param .M The management practice term in the model a character
 #' @param denDF A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
 #' Options include \code{none}, \code{algebraic} or \code{numeric}.
+#' @param .captured A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.
 #'
 #' @return An updated asreml model such that all non-significant environmental covariate terms have been removed from the model.
 #'
@@ -631,70 +667,84 @@ ec_fixed_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none"){
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model
-#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
-#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
-#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-#'    at(Trial,'Breeza 1'):Column +
-#'    Trial + Env +
-#'    spl(density, k=6) + spl(density, k=6):Genotype +
-#'    str(~Trial:Genotype + Trial:Genotype:density,
-#'        ~corh(2):id(48)) +
-#'    str(~Env:Genotype + Env:Genotype:density,
-#'        ~corh(2):id(136)),
-#'   residual=~ dsum(~units|ResidualTOS),
-#'   data = SorghumYield,
-#'   na.action=na.method(x='include'),
-#'   maxit=30, workspace="1Gb")
-#' postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
-#' simplify_asr <- simplify_ec_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
+#' baseline_asr <- asreml(
+#'  fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+#'  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'   Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+#'   Env + Env:Genotype + Env:Genotype:TargetPop,
+#'  residual=~ dsum(~units|Env),
+#'  data = SorghumYield)
+#'
+#' postPAW_full_asr <-  ec_full_model_constructor( .fm = baseline_asr,
+#'   .ec = PostPAW,
+#'   .G= Genotype ,
+#'   .M= TargetPop )
+#'
+#' simplify_asr <- simplify_ec_model(.fm = postPAW_full_asr,
+#'   .ecs_in_model = PostPAW,
+#'   .G = Genotype,
+#'   .M = TargetPop)
+#'
 #' simplify_asr$call
 #' @export
-simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none", .kn=10){
+simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none",
+                              .kn=10, .captured=FALSE){
 
 
-  # Error handling for input arguments
-
-  # Check if .fm is provided and is a valid asreml model object
+  # Check model first because we need the data frame
   if (missing(.fm) || is.null(.fm)) {
     stop("Error: The argument '.fm' (current model) must be provided and cannot be NULL.")
   }
+
   if (!inherits(.fm, "asreml")) {
     stop("Error: The argument '.fm' must be a valid asreml model object.")
   }
 
-  # Check if .ecs_in_model is provided and is a list of expressions
-  if (missing(.ecs_in_model) || is.null(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be provided and cannot be NULL.")
-  }
-  if (!rlang::is_quosures(.ecs_in_model)) {
-    stop("Error: The argument '.ecs_in_model' (environmental covariates in the model) must be a list of expressions (quosures).")
-  }
+  # Obtain the data frame from the model
+  .df <<- base::eval(.fm$call$data)
 
-  # Check if .G is provided and is a character
-  if (missing(.G) || is.null(.G)) {
-    stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.G) || length(.G) != 1) {
-    stop("Error: The argument '.G' (genotype term) must be a single character string.")
-  }
+  # Convert EC inputs
+  if(!.captured){
 
-  # Check if .M is provided and is a character
-  if (missing(.M) || is.null(.M)) {
-    stop("Error: The argument '.M' (management practice term) must be provided and cannot be NULL.")
-  }
-  if (!is.character(.M) || length(.M) != 1) {
-    stop("Error: The argument '.M' (management practice term) must be a single character string.")
+    ecs_expr <- rlang::enexpr(.ecs_in_model)
+
+    .ecs_in_model <- capture_ecs(
+      ECs = ecs_expr,
+      data = .df
+    )
+
+    .G <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.G)
+      )
+    )
+
+    .M <- normalise_name(
+      normalise_expr(
+        rlang::enexpr(.M)
+      )
+    )
+
+  } else {
+
+    if(!rlang::is_quosures(.ecs_in_model)){
+
+      .ecs_in_model <- capture_ecs(
+        ECs = .ecs_in_model,
+        data = .df
+      )
+
+    }
+
+    .G <- normalise_name(.G)
+    .M <- normalise_name(.M)
   }
 
   # Check if denDF is a valid value
   if (!is.character(denDF) || !(denDF %in% c("none", "numeric", "algebraic"))) {
     stop("Error: The argument 'denDF' (denominator degrees of freedom calculation) must be one of 'none', 'numeric', or 'algebraic'.")
   }
-
-
-  # Identify the data frame from the model
-  .df <<- base::eval(.fm$call$data)
-
 
   # Check if the data frame is valid
   if (is.null(.df) || !is.data.frame(.df)) {
@@ -716,7 +766,8 @@ simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none", .kn=10){
   while(KeepSimplifying==TRUE){
     # Simplify the random effects
     new_random_fm <- tryCatch(
-      ec_random_model(.fm = curr_fm, .ecs_in_model = .ecs_in_model, .G = .G, .M = .M, .kn=.kn),
+      ec_random_model(.fm = curr_fm, .ecs_in_model = .ecs_in_model, .G = .G,
+                      .M = .M, .kn=.kn, .captured=TRUE),
       error = function(e) {
         stop("Error during random effects simplification: ", e$message)
       }
@@ -724,7 +775,8 @@ simplify_ec_model <- function(.fm, .ecs_in_model, .G, .M, denDF="none", .kn=10){
 
     # Simplify the fixed effects
     new_fm <- tryCatch(
-      ec_fixed_model(.fm = new_random_fm, .ecs_in_model = .ecs_in_model, .G = .G, .M = .M, denDF = denDF),
+      ec_fixed_model(.fm = new_random_fm, .ecs_in_model = .ecs_in_model,
+                     .G = .G, .M = .M, denDF = denDF, .captured=TRUE),
       error = function(e) {
         stop("Error during fixed effects simplification: ", e$message)
       }

@@ -14,7 +14,8 @@ ec_finder(
   cores = 2,
   kn = 10,
   trial = NULL,
-  ecs_in_bline_model = rlang::quos(NULL)
+  ecs_in_bline_model = rlang::quos(NULL),
+  .captured = FALSE
 )
 }
 \arguments{
@@ -42,6 +43,8 @@ Note that this is ignored of the environmental covariate is a factor}
 An example is when each TOS within a trial constitutes an environment for the purposes of identifying important environmental covariates}
 
 \item{ecs_in_bline_model}{An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.}
+
+\item{.captured}{A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.}
 }
 \value{
 A list with components:
@@ -67,24 +70,23 @@ library(foreach)
 data(SorghumYield)
 data(SorghumCvGroup)
 # Run baseline model
-baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
-  random =~ at(Trial):Rep  + at(Trial):MainPlot +
-   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-   at(Trial,'Breeza 1'):Column +
-   Trial + Env +
-   spl(density, k=10) + spl(density, k=10):Genotype +
-   str(~Trial:Genotype + Trial:Genotype:density,
-       ~corh(2):id(48)) +
-   str(~Env:Genotype + Env:Genotype:density,
-       ~corh(2):id(136)),
-  residual=~ dsum(~units|ResidualTOS),
-  data = SorghumYield,
-  na.action=na.method(x='include'),
-  maxit=30, workspace="1Gb")
-ec_search <- ec_finder(fm=baseline_asr, ECs= rlang::quos(PrePAW, PostPAW),
-    G= rlang::expr(Genotype), E = rlang::expr(Env),
-    M= rlang::expr(density), trial = rlang::expr(Trial),
-     env_cv_df=SorghumCvGroup)
+baseline_asr <- asreml(
+ fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+ random =~ at(Trial):Rep  + at(Trial):MainPlot +
+  at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+  Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+  Env + Env:Genotype + Env:Genotype:TargetPop,
+ residual=~ dsum(~units|Env),
+ data = SorghumYield)
+
+ec_search <- ec_finder(fm=baseline_asr,
+    ECs = c(PrePAW, PostPAW),
+    G = Genotype,
+    E = Env,
+    M = TargetPop,
+    trial = Trial,
+    env_cv_df = SorghumCvGroup)
+
 ec_search$ec_selected
 ec_search$summary_ecs
 }

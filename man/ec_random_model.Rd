@@ -4,7 +4,7 @@
 \alias{ec_random_model}
 \title{Identify the most parsimonious EC random effects model}
 \usage{
-ec_random_model(.fm, .ecs_in_model, .G, .M, .kn = 10)
+ec_random_model(.fm, .ecs_in_model, .G, .M, .kn = 10, .captured = FALSE)
 }
 \arguments{
 \item{.fm}{The current \code{asreml} model object that random environmental covariate terms will be tested from.}
@@ -14,6 +14,8 @@ ec_random_model(.fm, .ecs_in_model, .G, .M, .kn = 10)
 \item{.G}{The genotype term in the model as a character}
 
 \item{.M}{The management practice term in the model a character}
+
+\item{.captured}{A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.}
 }
 \value{
 An updated asreml model such that the continuous non-significant environmental covariate spline and management terms have been removed from the model.
@@ -29,21 +31,24 @@ library(asreml)
 data(SorghumYield)
 data(SorghumCvGroup)
 # Run baseline model
-baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
-  random =~ at(Trial):Rep  + at(Trial):MainPlot +
-   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-   at(Trial,'Breeza 1'):Column +
-   Trial + Env +
-   spl(density, k=6) + spl(density, k=6):Genotype +
-   str(~Trial:Genotype + Trial:Genotype:density,
-       ~corh(2):id(48)) +
-   str(~Env:Genotype + Env:Genotype:density,
-       ~corh(2):id(136)),
-  residual=~ dsum(~units|ResidualTOS),
-  data = SorghumYield,
-  na.action=na.method(x='include'),
-  maxit=30, workspace="1Gb")
-postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
-random_simplify_asr <- ec_random_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
-random_simplify_asr$call
+baseline_asr <- asreml(
+ fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+ random =~ at(Trial):Rep  + at(Trial):MainPlot +
+  at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+  Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+  Env + Env:Genotype + Env:Genotype:TargetPop,
+ residual=~ dsum(~units|Env),
+ data = SorghumYield)
+
+postPAW_full_asr <-  ec_full_model_constructor( .fm = baseline_asr,
+  .ec = PostPAW,
+  .G= Genotype ,
+  .M= TargetPop )
+
+simplify_random_model_asr <- ec_random_model(.fm = postPAW_full_asr,
+  .ecs_in_model = PostPAW,
+  .G = Genotype,
+  .M = TargetPop)
+
+simplify_random_model_asr$call
 }

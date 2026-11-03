@@ -4,7 +4,7 @@
 \alias{ec_fixed_model}
 \title{Identify the most parsimonious EC fixed effects model}
 \usage{
-ec_fixed_model(.fm, .ecs_in_model, .G, .M, denDF = "none")
+ec_fixed_model(.fm, .ecs_in_model, .G, .M, denDF = "none", .captured = FALSE)
 }
 \arguments{
 \item{.fm}{The current \code{asreml} model object that the environmental covariate terms will be tested from.}
@@ -17,6 +17,8 @@ ec_fixed_model(.fm, .ecs_in_model, .G, .M, denDF = "none")
 
 \item{denDF}{A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
 Options include \code{none}, \code{algebraic} or \code{numeric}.}
+
+\item{.captured}{A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.}
 }
 \value{
 An updated asreml model such that the non-significant environmental covariate fixed effect terms have been removed from the model.
@@ -32,22 +34,29 @@ library(asreml)
 data(SorghumYield)
 data(SorghumCvGroup)
 # Run baseline model
-baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
-  random =~ at(Trial):Rep  + at(Trial):MainPlot +
-   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-   at(Trial,'Breeza 1'):Column +
-   Trial + Env +
-   spl(density, k=6) + spl(density, k=6):Genotype +
-   str(~Trial:Genotype + Trial:Genotype:density,
-       ~corh(2):id(48)) +
-   str(~Env:Genotype + Env:Genotype:density,
-       ~corh(2):id(136)),
-  residual=~ dsum(~units|ResidualTOS),
-  data = SorghumYield,
-  na.action=na.method(x='include'),
-  maxit=30, workspace="1Gb")
-postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
-random_simplify_asr <- ec_random_model(.fm=postPAW_full_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
-fixed_simplify_asr <- ec_fixed_model(.fm=random_simplify_asr, .ecs_in_model=rlang::quos(PostPAW), .G="Genotype", .M="density")
-fixed_simplify_asr$call
+baseline_asr <- asreml(
+ fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+ random =~ at(Trial):Rep  + at(Trial):MainPlot +
+  at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+  Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+  Env + Env:Genotype + Env:Genotype:TargetPop,
+ residual=~ dsum(~units|Env),
+ data = SorghumYield)
+
+postPAW_full_asr <-  ec_full_model_constructor( .fm = baseline_asr,
+  .ec = PostPAW,
+  .G= Genotype ,
+  .M= TargetPop )
+
+simplify_random_model_asr <- ec_random_model(.fm = postPAW_full_asr,
+  .ecs_in_model = PostPAW,
+  .G = Genotype,
+  .M = TargetPop)
+
+simplify_fixed_model_asr <- ec_fixed_model(.fm = simplify_random_model_asr,
+  .ecs_in_model = PostPAW,
+  .G = Genotype,
+  .M = TargetPop)
+
+simplify_fixed_model_asr$call
 }

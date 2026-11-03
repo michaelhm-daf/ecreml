@@ -15,7 +15,8 @@ ec_all(
   kn = 10,
   trial = NULL,
   ecs_in_bline_model = rlang::maybe_missing(),
-  denDF = "numeric"
+  denDF = "none",
+  .captured = FALSE
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ An example is when each TOS within a trial constitutes an environment for the pu
 
 \item{denDF}{A character outlining the method used by \code{asreml} to calculate the denominator degrees of freedom.
 Options include \code{none}, \code{algebraic} or \code{numeric}.}
+
+\item{.captured}{A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.}
 }
 \value{
 A list with 2 components:
@@ -67,25 +70,22 @@ library(foreach)
 data(SorghumYield)
 data(SorghumCvGroup)
 # Run baseline model
-baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
-  random =~ at(Trial):Rep  + at(Trial):MainPlot +
-   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-   at(Trial,'Breeza 1'):Column +
-   Trial + Env +
-   spl(density, k=10) + spl(density, k=10):Genotype +
-   str(~Trial:Genotype + Trial:Genotype:density,
-       ~corh(2):id(48)) +
-   str(~Env:Genotype + Env:Genotype:density,
-       ~corh(2):id(136)),
-  residual=~ dsum(~units|ResidualTOS),
-  data = SorghumYield,
-  na.action=na.method(x='include'),
-  maxit=30, workspace="1Gb")
+baseline_asr <- asreml(
+ fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+ random =~ at(Trial):Rep  + at(Trial):MainPlot +
+  at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+  Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+  Env + Env:Genotype + Env:Genotype:TargetPop,
+ residual=~ dsum(~units|Env),
+ data = SorghumYield)
 # Expect this next line of code to take 5-10 minutes to run on your machine
-ec_model_asr <- ec_all(fm=baseline_asr, ECs = rlang::quos(PrePAW:PostPAW, PreFlwEvap),
-       G= rlang::expr(Genotype), E = rlang::expr(Env),
-       M= rlang::expr(density), trial = rlang::expr(Trial),
-       env_cv_df=SorghumCvGroup, kn=6)
+ec_model_asr <- ec_all(fm = baseline_asr,
+  ECs = c(PrePAW:PostPAW, PreFlwEvap),
+  G = Genotype,
+  E = Env,
+  M = TargetPop,
+  trial = Trial,
+  env_cv_df = SorghumCvGroup)
 ec_model_asr$fm$call
 ec_model_asr$rmsep
 }

@@ -170,6 +170,14 @@ subtract_terms <- function(main_expr, removed_char_vec, response=FALSE) {
 #' @noRd
 
 margin <- function(terms, ec, G, M, df, .kn=10){
+
+  # check values
+  # cat("\n----- MARGIN DEBUG -----\n")
+  # print(terms)
+  # print(ec)
+  # print(G)
+  # print(M)
+
   # Error handling for input arguments
 
   # Check if terms is provided and is a character vector
@@ -318,11 +326,19 @@ margin <- function(terms, ec, G, M, df, .kn=10){
     terms <- stringr::str_replace_all(terms, M,"M")
   }
   terms <- stringr::str_replace_all(terms, G,"G")
+
+  # cat("\n----- AFTER REPLACEMENT -----\n")
+  # print(terms)
+
   # Set the default margin values to 4 (i.e. all terms are nested by default)
   margin_value <- rep(4, length(terms))
   for(i in (length(terms)):2 ){
     term_i <- terms[i]
     which_col_i <- which(term_i==colnames(terms_matrix))[1]
+
+# cat("\nterm_i =", term_i, "\n")
+# cat("which_col_i =", which_col_i, "\n")
+
     # Define a logical vector indicating if j is nested in i for each iteration of j
     is_j_nested_in_i <- TRUE
     # Determine which values less than i have equal margin values
@@ -330,7 +346,17 @@ margin <- function(terms, ec, G, M, df, .kn=10){
     for(j in which_terms_with_equal_margin) {
       term_j <- terms[j]
       which_row_j <- which(term_j==rownames(terms_matrix))[1]
+
+        # cat("term_j =", term_j, "\n")
+        # cat("which_row_j =", which_row_j, "\n")
       is_j_nested_in_i <- terms_matrix[which_row_j, which_col_i]
+
+# cat(
+#   "term_j =", term_j,
+#   " term_i =", term_i,
+#   " value =", is_j_nested_in_i,
+#   "\n"
+# )
       # If j is nested within i, subtract the margin value of j by 1
       if(is_j_nested_in_i==TRUE){
         margin_value[j] <- margin_value[j]-1
@@ -561,31 +587,43 @@ update_fixed_asr <- function(.fm, term=rlang::maybe_missing(), denDF="none", ssT
 #' @param .G An expression indicating which term in the model is the genotype component.
 #' @param .M An expression indicating which term in the model is the management practice component.
 #' @param .kn  The number of knot points to be included for the spline terms related to the environmental covariate \code{.ec} being added to the model.
+#' @param .captured A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.
 #'
 #' @return An asreml model object with all of the fixed and random terms related to the environmental covariate \code{.ec} being added to the model.
 #' @examples
 #' library(asreml)
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
-#' baseline_asr <- asreml( Yld ~ Genotype + density + Genotype:density,
-#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
-#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-#'    at(Trial,'Breeza 1'):Column +
-#'    Trial + Env +
-#'    spl(density, k=6) + spl(density, k=6):Genotype +
-#'    str(~Trial:Genotype + Trial:Genotype:density,
-#'        ~corh(2):id(48)) +
-#'    str(~Env:Genotype + Env:Genotype:density,
-#'        ~corh(2):id(136)),
-#'   residual=~ dsum(~units|ResidualTOS),
-#'   data = SorghumYield,
-#'   na.action=na.method(x='include'),
-#'   maxit=30, workspace="1Gb")
-#' postPAW_full_asr <-  ec_full_model_constructor(.fm=baseline_asr, .ec=rlang::expr(PostPAW), .G=rlang::expr(Genotype), .M=rlang::expr(density))
+#' baseline_asr <- asreml(
+#'  fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+#'  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'   Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+#'   Env + Env:Genotype + Env:Genotype:TargetPop,
+#'  residual=~ dsum(~units|Env),
+#'  data = SorghumYield)
+#'
+#' postPAW_full_asr <-  ec_full_model_constructor( .fm = baseline_asr,
+#'   .ec = PostPAW,
+#'   .G= Genotype ,
+#'   .M= TargetPop )
+#'
 #' postPAW_full_asr$call
 #' @export
-ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=10){
+ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=10,
+                                      .captured=FALSE){
   # Error handling for input arguments
+
+  if(!.captured){
+    .ec <- rlang::enexpr(.ec)
+    .G  <- rlang::enexpr(.G)
+    .M  <- rlang::enexpr(.M)
+
+    .ec <- normalise_expr(.ec)
+    .G  <- normalise_expr(.G)
+    .M  <- normalise_expr(.M)
+  }
+
 
   # Check if .fm is provided and is a valid asreml model object
   if (missing(.fm) || is.null(.fm)) {
@@ -599,23 +637,23 @@ ec_full_model_constructor <- function(.fm, .ec, .G, .M, .kn=10){
   if (missing(.ec) || is.null(.ec)) {
     stop("Error: The argument '.ec' (environmental covariate) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_expression(.ec)) {
-    stop("Error: The argument '.ec' must be a valid R expression.")
-  }
+  # if (!rlang::is_expression(.ec)) {
+  #   stop("Error: The argument '.ec' must be a valid R expression.")
+  # }
 
   if (missing(.G) || is.null(.G)) {
     stop("Error: The argument '.G' (genotype term) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_expression(.G)) {
-    stop("Error: The argument '.G' must be a valid R expression.")
-  }
+  # if (!rlang::is_expression(.G)) {
+  #   stop("Error: The argument '.G' must be a valid R expression.")
+  # }
 
   if (missing(.M) || is.null(.M)) {
     stop("Error: The argument '.M' (management practice term) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_expression(.M)) {
-    stop("Error: The argument '.M' must be a valid R expression.")
-  }
+  # if (!rlang::is_expression(.M)) {
+  #   stop("Error: The argument '.M' must be a valid R expression.")
+  # }
 
   # Check if .kn is a positive integer
   if (!is.numeric(.kn) || .kn <= 0 || .kn != as.integer(.kn)) {

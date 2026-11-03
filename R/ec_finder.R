@@ -97,6 +97,7 @@ cv_groups <- function(E, folds = 6) {
 #' @param .ecs_in_bline_model An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.
 #' @param aliased Type logical with default set to FALSE. An option that enables aliased predictions from \code{predict.asreml} to be outputted.
 #' We do not recommend setting this option to TRUE. As its inclusion in only for debugging purposes.
+#' @param .captured A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.
 #'
 #' @return A list with components:
 #' \itemize{
@@ -112,27 +113,42 @@ cv_groups <- function(E, folds = 6) {
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model
-#' baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
-#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
-#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-#'    at(Trial,'Breeza 1'):Column +
-#'    Trial + Env +
-#'    spl(density, k=10) + spl(density, k=6):Genotype +
-#'    str(~Trial:Genotype + Trial:Genotype:density,
-#'        ~corh(2):id(48)) +
-#'    str(~Env:Genotype + Env:Genotype:density,
-#'        ~corh(2):id(136)),
-#'   residual=~ dsum(~units|ResidualTOS),
-#'   data = SorghumYield,
-#'   na.action=na.method(x='include'),
-#'   maxit=30, workspace="1Gb")
-#'  ec_rmsep_summary <- ec_single(.fm=baseline_asr, .ec=rlang::expr(PrePAW), .G =rlang::expr(Genotype), .E = rlang::expr(Env),
-#'                    .M = rlang::expr(density), .trial=rlang::expr(Trial), .env_cv_df=SorghumCvGroup)
+#' baseline_asr <- asreml(
+#'  fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+#'  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'   Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+#'   Env + Env:Genotype + Env:Genotype:TargetPop,
+#'  residual=~ dsum(~units|Env),
+#'  data = SorghumYield)
+#'
+#'  ec_rmsep_summary <- ec_single(.fm = baseline_asr,
+#'  .ec= PrePAW ,
+#'  .G = Genotype,
+#'  .E = Env,
+#'  .M = TargetPop,
+#'  .trial = Trial,
+#'  .env_cv_df=SorghumCvGroup)
+#'
 #'  ec_rmsep_summary$Rmsep
 #'
 #' @export
-ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
-                       .cores=2, .kn=10, .ecs_in_bline_model=rlang::quos(NULL), aliased=FALSE){
+ec_single <- function(.fm, .ec, .G, .E, .M, .trial = NULL, .env_cv_df=NULL,
+                       .cores=2, .kn=10, .ecs_in_bline_model=rlang::quos(NULL),
+                      aliased=FALSE, .captured=FALSE){
+
+  if(!.captured){
+
+    .G <- normalise_expr(rlang::enexpr(.G))
+    .E <- normalise_expr(rlang::enexpr(.E))
+    .M <- normalise_expr(rlang::enexpr(.M))
+    .trial <- normalise_expr(rlang::enexpr(.trial))
+    .ec <- normalise_expr(rlang::enexpr(.ec))
+  }
+
+  cat("Inside ec_single:\n")
+  print(.E)
+  print(rlang::expr_text(.E))
 
   # Error handling for input arguments
 
@@ -148,9 +164,9 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   if (missing(.ec) || is.null(.ec)) {
     stop("Error: The argument '.ec' (environmental covariate) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_expression(.ec)) {
-    stop("Error: The argument '.ec' must be a valid R expression.")
-  }
+  # if (!rlang::is_expression(.ec)) {
+  #   stop("Error: The argument '.ec' must be a valid R expression.")
+  # }
 
   # Check if .G, .E, and .M are provided and are expressions
   if (missing(.G) || is.null(.G)) {
@@ -167,9 +183,9 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
     stop("Error: The argument '.E' must be a valid R expression.")
   }
 
-  if (!is.null(.M) && !rlang::is_expression(.M)) {
-    stop("Error: The argument '.M' (management practice term) must be a valid R expression if provided.")
-  }
+  # if (!is.null(.M) && !rlang::is_expression(.M)) {
+  #   stop("Error: The argument '.M' (management practice term) must be a valid R expression if provided.")
+  # }
 
   # Check if .trial is an expression if provided
   if (!is.null(.trial) && !rlang::is_expression(.trial)) {
@@ -192,9 +208,9 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   }
 
   # Check if .ecs_in_bline_model is a list of quosures
-  if (!is.null(.ecs_in_bline_model) && !rlang::is_quosures(.ecs_in_bline_model)) {
-    stop("Error: The argument '.ecs_in_bline_model' must be a list of quosures if provided.")
-  }
+  # if (!is.null(.ecs_in_bline_model) && !rlang::is_quosures(.ecs_in_bline_model)) {
+  #   stop("Error: The argument '.ecs_in_bline_model' must be a list of quosures if provided.")
+  # }
 
   # Check if aliased is a logical value
   if (!is.logical(aliased)) {
@@ -218,9 +234,9 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
   }
 
   # Check if .env_cv_df contains the environment term
-  if (!is.null(.env_cv_df) && is.null(.env_cv_df[[rlang::as_string(.E)]])) {
-    stop("Error: The environment term is missing from the provided environment grouping for cross-validation.")
-  }
+  # if (!is.null(.env_cv_df) && is.null(.env_cv_df[[rlang::as_string(.E)]])) {
+  #   stop("Error: The environment term is missing from the provided environment grouping for cross-validation.")
+  # }
 
   # Ensure the number of cores does not exceed the number of cross-validation groups
   if (!is.null(.env_cv_df) && .cores > length(unique(.env_cv_df$cv_group))) {
@@ -247,14 +263,6 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 
 
   # ADD AN ERROR MESSAGE IF AT() HAS LEVELS NUMBERED INSTEAD OF STATED!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-  # Set each of the inputs as expressions so that the user does not have to make them as expressions prior to input
-  # .ec <- enexpr(.ec)
-  # .G <- enexpr(.G)
-  # .E <- enexpr(.E)
-  # .M <- enexpr(.M)
-  #.trial <- enexpr(.trial)
 
   # Identify the EC variables that are present in the baseline model
   vars_ec_bl <- as.list(magrittr::set_names(seq_along(.df), names(.df)))
@@ -674,6 +682,7 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' @param kn The number of knot points for the spline component of the model for the environment covariate being tested.
 #' Note that this is ignored of the environmental covariate is a factor
 #' @param ecs_in_bline_model An optional list of quosures where each element of the list pertains to an environmental covariate that is in the initial baseline model.
+#' @param .captured A logical indicating whether the expressions for the model terms have already been captured. default is FALSE.
 #'
 #' @return A list with components:
 #' \itemize{
@@ -688,30 +697,82 @@ ec_single <- function(.fm, .ec, .G, .E, .M, .trial=NULL, .env_cv_df=NULL,
 #' data(SorghumYield)
 #' data(SorghumCvGroup)
 #' # Run baseline model
-#' baseline_asr <- asreml::asreml( Yld ~ Genotype + density + Genotype:density,
-#'   random =~ at(Trial):Rep  + at(Trial):MainPlot +
-#'    at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
-#'    at(Trial,'Breeza 1'):Column +
-#'    Trial + Env +
-#'    spl(density, k=10) + spl(density, k=10):Genotype +
-#'    str(~Trial:Genotype + Trial:Genotype:density,
-#'        ~corh(2):id(48)) +
-#'    str(~Env:Genotype + Env:Genotype:density,
-#'        ~corh(2):id(136)),
-#'   residual=~ dsum(~units|ResidualTOS),
-#'   data = SorghumYield,
-#'   na.action=na.method(x='include'),
-#'   maxit=30, workspace="1Gb")
-#' ec_search <- ec_finder(fm=baseline_asr, ECs= rlang::quos(PrePAW, PostPAW),
-#'     G= rlang::expr(Genotype), E = rlang::expr(Env),
-#'     M= rlang::expr(density), trial = rlang::expr(Trial),
-#'      env_cv_df=SorghumCvGroup)
+#' baseline_asr <- asreml(
+#'  fixed = Yld ~ Genotype + TargetPop + Genotype:TargetPop,
+#'  random =~ at(Trial):Rep  + at(Trial):MainPlot +
+#'   at(Trial,c('Breeza 1', 'Breeza 2', 'Emerald', 'Moree')):SubPlot +
+#'   Trial + Trial:Genotype + Trial:Genotype:TargetPop +
+#'   Env + Env:Genotype + Env:Genotype:TargetPop,
+#'  residual=~ dsum(~units|Env),
+#'  data = SorghumYield)
+#'
+#' ec_search <- ec_finder(fm=baseline_asr,
+#'     ECs = c(PrePAW, PostPAW),
+#'     G = Genotype,
+#'     E = Env,
+#'     M = TargetPop,
+#'     trial = Trial,
+#'     env_cv_df = SorghumCvGroup)
+#'
 #' ec_search$ec_selected
 #' ec_search$summary_ecs
 #' @export
 ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
-                      cores=2, kn=10, trial=NULL, ecs_in_bline_model=rlang::quos(NULL))
+                      cores=2, kn=10, trial=NULL,
+                      ecs_in_bline_model=rlang::quos(NULL),
+                      .captured=FALSE)
 {
+
+   # Obtain the data frame from the asreml model
+  df  <- base::eval(fm$call$data)
+
+  # capture and normalise model terms
+  if(!.captured){
+
+    ECs_expr <- rlang::enexpr(ECs)
+
+    ECs <- capture_ecs(
+      ECs = ECs_expr,
+      data = df
+    )
+
+    G <- normalise_expr(
+      rlang::enexpr(G)
+    )
+
+    E <- normalise_expr(
+      rlang::enexpr(E)
+    )
+
+    M <- normalise_expr(
+      rlang::enexpr(M)
+    )
+
+    trial <- normalise_expr(
+        rlang::enexpr(trial)
+    )
+
+    if(!rlang::quo_is_null(ecs_in_bline_model[[1]])==TRUE){
+
+      ecs_expr <- rlang::enexpr(
+        ecs_in_bline_model
+      )
+
+      ecs_in_bline_model <- capture_ecs(
+        ECs = ecs_expr,
+        data = df
+      )
+    }
+
+  } else {
+
+    G <- normalise_expr(G)
+    E <- normalise_expr(E)
+    M <- normalise_expr(M)
+    trial <- normalise_expr(trial)
+  }
+
+
   # Error handling for input arguments
 
   # Check if fm is provided and is a valid asreml model object
@@ -726,9 +787,13 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
   if (missing(ECs) || is.null(ECs)) {
     stop("Error: The argument 'ECs' (environmental covariates) must be provided and cannot be NULL.")
   }
-  if (!rlang::is_quosures(ECs)) {
-    stop("Error: The argument 'ECs' must be a list of quosures.")
-  }
+  # if (!rlang::is_quosures(ECs)) {
+  #   stop("Error: The argument 'ECs' must be a list of quosures.")
+  # }
+
+  if (missing(ECs) || is.null(ECs)) {
+  stop("Error: The argument 'ECs' must be provided.")
+}
 
   # Check if G, E, and M are provided and are expressions
   if (missing(G) || is.null(G)) {
@@ -777,8 +842,8 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
     stop("Error: The argument 'ecs_in_bline_model' must be a list of quosures if provided.")
   }
 
-  # Check if any environmental covariates in ECs are also in ecs_in_bline_model
-  if (!is.null(ecs_in_bline_model)) {
+  #Check if any environmental covariates in ECs are also in ecs_in_bline_model
+  if (!rlang::quo_is_null(ecs_in_bline_model[[1]])==TRUE) {
     ecs_in_bline_model_names <- purrr::map_chr(ecs_in_bline_model, rlang::as_label)
     ECs_names <- purrr::map_chr(ECs, rlang::as_label)
     common_ecs <- base::intersect(ECs_names, ecs_in_bline_model_names)
@@ -787,8 +852,6 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
                  paste(common_ecs, collapse = ", ")))
     }
   }
-
-  df  <- base::eval(fm$call$data)
 
   # Turn all the relevant inputs into expressions (except for trial)
   # G <- rlang::enexpr(G)
@@ -842,13 +905,12 @@ ec_finder <- function(fm, ECs, G, E, M, env_cv_df=NULL,
 
   for(i in 1:dim(ec_df)[1]){
     ec_curr <- rlang::parse_expr(ec_df$EC[i])
-    # ec_cv_temp <- ec_single(fm=YieldInit.fm, ec=ec_curr, G= expr(Hybrid), E = expr(Env),
-    #            M = expr(density), trial=expr(Trial), env_cv_df=sorghum_env_cv_df,
-    #            cores = 6, kn=6)
     tryCatch({
       ec_cv_temp <- ec_single(.fm = fm, .ec = ec_curr, .G = G, .E = E,
                               .M = M, .trial = trial, .env_cv_df = env_cv_df,
-                              .cores = cores, .kn = kn, .ecs_in_bline_model = quo_ecs_bl)
+                              .cores = cores, .kn = kn,
+                              .ecs_in_bline_model = quo_ecs_bl,
+                              .captured=TRUE)
     }, error = function(e) {
       stop(paste("Error during cross-validation for environmental covariate '", ec_curr, "': ", e$message, sep = ""))
     })
